@@ -1,0 +1,6 @@
+{
+  "name": "Whiteboard Pro v6.0",
+  "description": "Интерактивная онлайн/офлайн доска для преподавателей и учеников с поддержкой LaTeX формул, построением по узлам сетки, декартовой системой координат и залипанием объектов.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

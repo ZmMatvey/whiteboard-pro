@@ -1,0 +1,1190 @@
+/* Контейнер мира для стикеров, текста, картинок, PDF, формул и виджетов LearnBoard */
+#world-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  transform-origin: 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+body.select-mode #world-layer {
+  z-index: 4;
+}
+
+.widget {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  border: 2px solid transparent;
+  pointer-events: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.widget.selected {
+  border-color: #2563eb;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
+}
+
+.widget-header {
+  height: 28px;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+  pointer-events: auto;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.widget-header:active {
+  cursor: grabbing;
+}
+
+.note-colors {
+  display: flex;
+  gap: 5px;
+  pointer-events: auto;
+}
+
+.note-color-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  transition: transform 0.1s;
+}
+.note-color-dot:hover { transform: scale(1.2); }
+
+.delete-widget {
+  pointer-events: auto;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 18px;
+  font-weight: bold;
+  color: #475569;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  touch-action: manipulation;
+  transition: background 0.12s, color 0.12s;
+}
+.delete-widget:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.widget-body {
+  flex: 1;
+  padding: 12px;
+  outline: none;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #1e293b;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+/* В режиме редактирования текста */
+.widget.editing {
+  border-color: #f59e0b;
+  z-index: 10;
+}
+.widget.editing .widget-body {
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+  background: rgba(255, 255, 255, 0.4);
+}
+body.dark .widget.text-widget.editing .widget-body {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+/* Текстовый виджет */
+.widget.text-widget {
+  background: transparent;
+  box-shadow: none;
+}
+.widget.text-widget .widget-header {
+  background: rgba(100, 116, 139, 0.18);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.widget.text-widget:hover .widget-header,
+.widget.text-widget.selected .widget-header,
+.widget.text-widget.editing .widget-header {
+  opacity: 1;
+}
+.widget.text-widget .widget-body {
+  color: var(--text-color);
+  font-size: 20px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+/* Виджет картинки и PDF-документа */
+.widget.image-widget {
+  background: transparent;
+}
+.widget.image-widget .widget-header {
+  background: rgba(255, 255, 255, 0.85);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.6);
+  backdrop-filter: blur(6px);
+}
+body.dark .widget.image-widget .widget-header {
+  background: rgba(30, 41, 59, 0.88);
+  border-bottom-color: rgba(51, 65, 85, 0.8);
+}
+.widget.image-widget img {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  border-radius: 0 0 8px 8px;
+  display: block;
+  background: transparent;
+}
+.widget.pdf-widget {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+.widget.pdf-widget img {
+  background: #ffffff;
+  border-radius: 0;
+}
+.widget.pdf-widget .widget-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+.pdf-card-footer {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #334155;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  border-radius: 0 0 8px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.pdf-header-controls,
+.pdf-widget-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+.pdf-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #dbeafe;
+  padding: 2px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.pdf-nav-mini {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: #1e293b;
+  touch-action: manipulation;
+}
+.pdf-nav-mini:hover { background: #f1f5f9; }
+.pdf-open-editor-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+.pdf-open-editor-btn:hover { background: #1d4ed8; }
+
+body.dark .widget.pdf-widget {
+  background: #1e293b;
+  border-color: #334155;
+}
+body.dark .widget.pdf-widget .widget-header {
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+body.dark .pdf-card-footer {
+  background: #1e293b;
+  border-top-color: #334155;
+  color: #e2e8f0;
+}
+body.dark .pdf-badge {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+body.dark .pdf-nav-mini {
+  background: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+body.dark .pdf-nav-mini:hover {
+  background: #334155;
+}
+body.dark .delete-widget {
+  color: #94a3b8;
+}
+
+/* --- Виджет математической/физической формулы LaTeX --- */
+.widget.latex-widget {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+body.dark .widget.latex-widget {
+  background: rgba(30, 41, 59, 0.92);
+}
+
+.widget.latex-widget .widget-header {
+  background: rgba(37, 99, 235, 0.08);
+  opacity: 0.9;
+  transition: opacity 0.15s;
+}
+.widget.latex-widget:hover .widget-header,
+.widget.latex-widget.selected .widget-header {
+  opacity: 1;
+}
+
+.latex-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.latex-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.latex-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.8;
+  padding: 0 3px;
+}
+.latex-edit-btn:hover { opacity: 1; }
+
+.latex-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px 14px;
+  color: var(--text-color);
+  overflow: auto;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.latex-content > * {
+  margin: 0 auto;
+}
+
+.latex-content .katex {
+  font-size: 1.15em;
+  user-select: none;
+}
+
+/* Fallback рендер если KaTeX офлайн */
+.latex-fallback-rendered {
+  font-family: 'Cambria Math', 'STIX Two Math', 'Times New Roman', serif;
+  font-size: 22px;
+  letter-spacing: 0.5px;
+}
+
+/* --- Виджеты LearnBoard: Таймер, Секундомер, Калькулятор --- */
+.widget.lb-tool-widget {
+  background: var(--panel-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+  pointer-events: auto;
+}
+.lb-widget-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.lb-widget-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 12px;
+  pointer-events: auto;
+}
+.timer-display, .stopwatch-display {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-color);
+  letter-spacing: 1px;
+  line-height: 1.1;
+}
+.timer-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--btn-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.timer-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+}
+.timer-presets {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+.lb-mini-btn,
+.timer-presets button {
+  background: var(--btn-bg);
+  color: var(--text-color);
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.12s, border-color 0.12s;
+}
+.lb-mini-btn:hover,
+.timer-presets button:hover {
+  background: var(--btn-hover);
+  border-color: var(--accent);
+}
+.timer-controls,
+.timer-actions {
+  display: flex;
+  gap: 6px;
+}
+.lb-action-btn,
+.lb-btn {
+  flex: 1;
+  background: var(--btn-bg);
+  color: var(--text-color);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.lb-btn:hover,
+.lb-action-btn:hover {
+  background: var(--btn-hover);
+}
+.lb-action-btn.primary,
+.lb-btn.primary {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+.lb-btn.primary:hover,
+.lb-action-btn.primary:hover {
+  opacity: 0.92;
+}
+.widget.timer-finished {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Инженерный калькулятор Comix CS-85 · 240 FUNCTION CALCULATOR (разрешён на ЕГЭ по физике) */
+.widget.note-widget {
+  border-radius: 10px 22px 10px 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+}
+.widget.note-widget::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(225deg, rgba(15, 23, 42, 0.12) 50%, rgba(255, 255, 255, 0.55) 50%);
+  border-bottom-left-radius: 6px;
+  pointer-events: none;
+}
+
+/* --- Инженерный калькулятор Comix CS-85 (240 функций) --- */
+.widget.calculator-widget {
+  background: linear-gradient(90deg, #989ca0 0%, #c6cacd 3.5%, #84888d 6%, #36383b 8%, #323437 92%, #84888d 94%, #c6cacd 96.5%, #989ca0 100%) !important;
+  border: 1.5px solid #6b7075 !important;
+  border-radius: 24px 24px 36px 36px !important;
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.36),
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.4) !important;
+  overflow: hidden;
+  padding: 0 5px 5px;
+}
+.widget.calculator-widget.selected {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.34), 0 18px 36px rgba(15, 23, 42, 0.36) !important;
+}
+.widget.calculator-widget .widget-header {
+  background: linear-gradient(180deg, #3a3d40 0%, #2d3033 100%);
+  border-bottom: none;
+  border-radius: 19px 19px 0 0;
+  height: 20px;
+  padding: 0 10px;
+  margin: 3px 2px 0;
+  justify-content: space-between;
+}
+.cs85-drag-grip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  opacity: 0.45;
+}
+.cs85-drag-grip span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+.widget.calculator-widget .delete-widget {
+  color: #9ca3af;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  line-height: 1;
+}
+.widget.calculator-widget .delete-widget:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.18);
+}
+.widget.calculator-widget .resize-handle {
+  opacity: 0.35;
+  right: 8px;
+  bottom: 8px;
+  background: linear-gradient(135deg, transparent 50%, rgba(203, 213, 225, 0.55) 50%);
+}
+.widget.calculator-widget:hover .resize-handle {
+  opacity: 0.75;
+}
+
+.cs85-shell {
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  outline: none;
+  user-select: none;
+}
+.cs85-inner-face {
+  flex: 1;
+  min-height: 0;
+  margin: 0 2px 2px;
+  padding: 0 9px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: linear-gradient(180deg, #2d3033 0%, #3a3d41 42%, #313438 80%, #26292c 100%);
+  border-radius: 0 0 30px 30px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 -5px 10px rgba(0, 0, 0, 0.35);
+  color: #f1f5f9;
+}
+
+/* Глянцевый верхний капюшон вокруг логотипа и дисплея */
+.cs85-top-hood {
+  margin: 0 -4px 1px;
+  padding: 4px 10px 10px;
+  background: linear-gradient(180deg, #2e3134 0%, #232528 55%, #2b2e31 100%);
+  border-radius: 4px 4px 18px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-top: none;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cs85-brand-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+}
+.cs85-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.cs85-brand-model {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.9px;
+  color: #f8fafc;
+}
+.cs85-brand-sub {
+  text-align: center;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.05px;
+  color: #e2e8f0;
+  opacity: 0.9;
+  margin-top: -1px;
+  margin-bottom: 2px;
+}
+
+/* 2-строчный ЖКИ-дисплей Comix CS-85 */
+.cs85-lcd-bezel {
+  background: #17191b;
+  padding: 4px;
+  border-radius: 7px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.cs85-lcd {
+  background: linear-gradient(180deg, #e7ebe4 0%, #dde2da 100%);
+  border-radius: 4px;
+  padding: 3px 7px 4px;
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 2px 5px rgba(15, 23, 42, 0.18);
+  transition: opacity 0.15s ease;
+}
+.cs85-shell.calc-off .cs85-lcd-indicators,
+.cs85-shell.calc-off .cs85-lcd-top,
+.cs85-shell.calc-off .cs85-lcd-bottom {
+  opacity: 0;
+}
+.cs85-lcd-indicators {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 11px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 7.8px;
+  font-weight: 700;
+  color: #161b17;
+  letter-spacing: 0.2px;
+}
+.cs85-ind {
+  opacity: 0;
+  line-height: 1;
+  transition: opacity 0.1s;
+}
+.cs85-ind.on {
+  opacity: 0.95;
+}
+.cs85-ind-shift.on,
+.cs85-ind-alpha.on,
+.cs85-ind-sto.on,
+.cs85-ind-rcl.on,
+.cs85-ind-sd.on {
+  background: #141915;
+  color: #e6ebe3;
+  padding: 0.5px 2.5px;
+  border-radius: 1.5px;
+}
+.cs85-ind-angle {
+  margin-left: auto;
+  background: #141915;
+  color: #e6ebe3;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 1.5px;
+  min-width: 11px;
+  text-align: center;
+}
+.cs85-ind-replay {
+  font-size: 7.5px;
+  color: #141915;
+}
+.cs85-lcd-top {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #151a16;
+  text-align: left;
+  min-height: 17px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.6px;
+}
+.cs85-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  background: #151a16;
+  vertical-align: -1.5px;
+  margin: 0 0.5px;
+  animation: cs85CursorBlink 1s steps(2, start) infinite;
+}
+.cs85-cursor.ins {
+  width: 7px;
+  height: 2.5px;
+  vertical-align: -1px;
+}
+@keyframes cs85CursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+.cs85-lcd-bottom {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  text-align: right;
+  color: #0e120f;
+  line-height: 1.1;
+  min-height: 24px;
+  letter-spacing: 0.4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Верхний блок управления: 2ndF / ALPHA — REPLAY — MODE CLR / ON + ряд 1 */
+.cs85-control-area {
+  display: grid;
+  grid-template-columns: 1fr 72px 1fr;
+  gap: 5px;
+  align-items: center;
+  margin-top: 1px;
+}
+.cs85-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.cs85-top-ctrl-row,
+.cs85-top-fn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.cs85-ctrl-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.cs85-ctrl-lbl {
+  font-size: 7.8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.cs85-ctrl-lbl.gold,
+.cs85-ctrl-lbl b.gold {
+  color: #d6b25e;
+}
+.cs85-ctrl-lbl.pink,
+.cs85-ctrl-lbl b.pink {
+  color: #df95ad;
+}
+.cs85-kidney-btn {
+  width: 100%;
+  height: 18px;
+  border-radius: 10px 10px 12px 12px;
+  background: linear-gradient(180deg, #b8bdc2 0%, #979da4 60%, #838991 100%);
+  border: 1px solid #4d5258;
+  box-shadow:
+    0 2px 0 #15171a,
+    inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.07s, filter 0.1s;
+}
+.cs85-kidney-btn:hover {
+  filter: brightness(1.07);
+}
+.cs85-kidney-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #15171a;
+}
+.cs85-kidney-btn.shift-key.active {
+  background: linear-gradient(180deg, #f3c867 0%, #d49d2a 100%);
+  border-color: #fde68a;
+}
+.cs85-kidney-btn.alpha-key.active {
+  background: linear-gradient(180deg, #f09bb7 0%, #c95f85 100%);
+  border-color: #fbcfe8;
+}
+
+/* Круглый серебристый 4-позиционный диск REPLAY */
+.cs85-replay-pad {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 46% 32%, #cfd4d9 0%, #a5abb2 58%, #838991 100%);
+  border: 1.5px solid #494e54;
+  box-shadow:
+    0 3px 0 #141619,
+    0 5px 10px rgba(0, 0, 0, 0.42),
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.22);
+  display: grid;
+  grid-template-columns: 18px 1fr 18px;
+  grid-template-rows: 18px 1fr 18px;
+  align-items: center;
+  justify-items: center;
+  padding: 2px;
+}
+.cs85-replay-pad::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+.cs85-replay-center {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 7.2px;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+  color: #3f444b;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.cs85-replay-dir {
+  background: transparent;
+  border: none;
+  color: #4b5159;
+  font-size: 8.5px;
+  line-height: 1;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.1s, background 0.1s, transform 0.08s;
+}
+.cs85-replay-dir:hover {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.28);
+}
+.cs85-replay-dir:active {
+  transform: scale(0.9);
+}
+.cs85-replay-dir.up { grid-column: 2; grid-row: 1; }
+.cs85-replay-dir.down { grid-column: 2; grid-row: 3; }
+.cs85-replay-dir.left { grid-column: 1; grid-row: 2; }
+.cs85-replay-dir.right { grid-column: 3; grid-row: 2; }
+
+/* Научная клавиатура 6×3 */
+.cs85-sci-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px 4px;
+  margin-top: 2px;
+}
+.cs85-key-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5px;
+  min-width: 0;
+}
+.cs85-sub-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 11px;
+  min-height: 11px;
+  max-height: 11px;
+  font-size: 8px;
+  line-height: 1;
+  padding: 0 1px;
+  flex-shrink: 0;
+}
+.cs85-sub-row.dual {
+  justify-content: space-between;
+}
+.cs85-sub-row.right-only {
+  justify-content: flex-end;
+  padding-right: 3px;
+}
+.cs85-sub {
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+}
+.cs85-sub sup,
+.cs85-sub sub {
+  font-size: 6px;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.cs85-sub sup { top: -0.35em; }
+.cs85-sub sub { bottom: -0.15em; }
+.cs85-sub.gold {
+  color: #e4be62;
+}
+.cs85-sub.gold:hover {
+  color: #fde68a;
+  text-decoration: underline;
+}
+.cs85-sub.pink {
+  color: #eb9fb7;
+}
+.cs85-sub.pink:hover {
+  color: #fbcfe8;
+  text-decoration: underline;
+}
+.cs85-sub.sd-tag {
+  position: relative;
+  padding: 0 3px;
+}
+.cs85-sub.sd-tag::before,
+.cs85-sub.sd-tag::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: -1px;
+  width: 2.5px;
+  border-top: 1px solid #4ca3c7;
+}
+.cs85-sub.sd-tag::before {
+  left: -1px;
+  border-left: 1px solid #4ca3c7;
+}
+.cs85-sub.sd-tag::after {
+  right: -1px;
+  border-right: 1px solid #4ca3c7;
+}
+.cs85-mn {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 0.72;
+  vertical-align: middle;
+  margin-left: 0.5px;
+}
+.cs85-mn sup,
+.cs85-mn sub {
+  font-size: 6px;
+  line-height: 0.78;
+  position: static;
+  top: auto;
+  bottom: auto;
+}
+
+.calc-key {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  touch-action: manipulation;
+  transition: transform 0.07s, filter 0.1s;
+}
+.calc-key:active {
+  transform: translateY(1px);
+}
+
+.cs85-sci-btn {
+  height: 22px;
+  border-radius: 7px 7px 9px 9px;
+  background: linear-gradient(180deg, #24272b 0%, #141619 72%, #0e1012 100%);
+  color: #f8fafc;
+  border: 1px solid #3c4047;
+  font-size: 9.8px;
+  line-height: 1;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  box-shadow:
+    0 2px 0 #070809,
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.cs85-sci-btn sup,
+.cs85-sci-btn sub {
+  font-size: 6.8px;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.cs85-sci-btn sup { top: -0.32em; }
+.cs85-sci-btn sub { bottom: -0.22em; }
+.cs85-sci-btn:hover {
+  filter: brightness(1.18);
+}
+.cs85-sci-btn:active {
+  box-shadow: 0 1px 0 #070809;
+}
+.cs85-sci-btn.hyp-active {
+  background: linear-gradient(180deg, #0d6e55 0%, #064e3b 100%);
+  border-color: #34d399;
+}
+
+/* Основная цифровая клавиатура 5×4 (Comix CS-85) */
+.cs85-num-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px 5px;
+  align-content: start;
+  margin-top: 4px;
+}
+.cs85-num-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.cs85-num-btn {
+  height: 31px;
+  border-radius: 9px 9px 13px 13px;
+  background: linear-gradient(180deg, #26292d 0%, #17191c 70%, #101214 100%);
+  color: #ffffff;
+  border: 1px solid #3e4249;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow:
+    0 2.5px 0 #07080a,
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.cs85-num-btn:hover {
+  filter: brightness(1.18);
+}
+.cs85-num-btn:active {
+  box-shadow: 0 1px 0 #07080a;
+}
+.cs85-num-btn.op,
+.cs85-num-btn.eq-btn {
+  font-size: 16.5px;
+}
+.cs85-num-btn.exp-btn,
+.cs85-num-btn.ans-btn {
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+.cs85-orange-btn {
+  height: 31px;
+  border-radius: 9px 9px 13px 13px;
+  background: linear-gradient(180deg, #ec5a2d 0%, #d8471e 70%, #bf3b16 100%);
+  color: #ffffff;
+  border: 1px solid #f0744d;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  box-shadow:
+    0 2.5px 0 #6e1f0a,
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.cs85-orange-btn:hover {
+  filter: brightness(1.08);
+}
+.cs85-orange-btn:active {
+  box-shadow: 0 1px 0 #6e1f0a;
+}
+
+/* Плавающий Comix CS-85 внутри PDF/DOCX/Фото режима */
+.pdf-float-util.pdf-comix-calc {
+  width: 312px !important;
+  padding: 0 5px 5px !important;
+  background: linear-gradient(90deg, #989ca0 0%, #c6cacd 3.5%, #84888d 6%, #36383b 8%, #323437 92%, #84888d 94%, #c6cacd 96.5%, #989ca0 100%) !important;
+  border: 1.5px solid #6b7075 !important;
+  border-radius: 24px 24px 36px 36px !important;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.42) !important;
+}
+.pdf-float-util.pdf-comix-calc .pdf-float-util-head {
+  background: linear-gradient(180deg, #3a3d40 0%, #2d3033 100%);
+  border-bottom: none;
+  border-radius: 19px 19px 0 0;
+  height: 22px;
+  margin: 3px 2px 0;
+  padding: 0 10px;
+  color: #cbd5e1;
+}
+.pdf-float-util.pdf-comix-calc .pdf-float-util-body {
+  padding: 0 !important;
+}
+
+/* --- Виджет интерактивной таблицы --- */
+.widget.table-widget {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+  pointer-events: auto;
+}
+body.dark .widget.table-widget {
+  background: #1e293b;
+  border-color: #475569;
+}
+.widget.table-widget .widget-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+body.dark .widget.table-widget .widget-header {
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+.table-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+.table-mini-btn {
+  background: var(--btn-bg);
+  color: var(--text-color);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.table-mini-btn:hover {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+  pointer-events: auto;
+  border-radius: 0 0 8px 8px;
+}
+.wb-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13.5px;
+  color: var(--text-color);
+}
+.widget.table-widget.editing {
+  border-color: #0d9488;
+  box-shadow: 0 10px 26px rgba(13, 148, 136, 0.18);
+  z-index: 12;
+}
+.wb-table th,
+.wb-table td {
+  border: 1px solid #cbd5e1;
+  padding: 7px 9px;
+  min-height: 30px;
+  vertical-align: middle;
+  outline: none;
+  min-width: 64px;
+  word-break: break-word;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
+body.dark .wb-table th,
+body.dark .wb-table td {
+  border-color: #475569;
+}
+.wb-table th {
+  background: #f1f5f9;
+  font-weight: 700;
+  text-align: left;
+}
+body.dark .wb-table th {
+  background: #334155;
+}
+.wb-table th:focus,
+.wb-table td:focus {
+  background: rgba(13, 148, 136, 0.08);
+  box-shadow: inset 0 0 0 2px #0d9488;
+}
+
+/* Уголок изменения размера */
+.resize-handle {
+  pointer-events: auto;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  right: 2px;
+  bottom: 2px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.35) 50%);
+  border-radius: 2px;
+  touch-action: none;
+}
+body.dark .resize-handle {
+  background: linear-gradient(135deg, transparent 50%, rgba(226, 232, 240, 0.45) 50%);
+}
+@media (pointer: coarse) {
+  .resize-handle {
+    width: 22px;
+    height: 22px;
+  }
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
+}
+

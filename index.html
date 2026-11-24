@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta id="metaColorScheme" name="color-scheme" content="only light">
+  <meta name="darkreader-lock">
+  <meta name="theme-color" id="metaThemeColor" content="#ffffff">
+  <title>Whiteboard Pro</title>
+  <meta name="description" content="Интерактивная онлайн/офлайн доска для преподавателей и учеников с PDF-редактором, Кодификатором ЕГЭ по физике 2027, инженерным калькулятором Comix CS-85, 2D/3D фигурами и многостраничным режимом.">
+  <meta property="og:title" content="Whiteboard Pro">
+  <meta property="og:description" content="Интерактивная онлайн/офлайн доска для преподавателей и учеников с PDF-редактором, Кодификатором ЕГЭ по физике 2027, инженерным калькулятором Comix CS-85, 2D/3D фигурами и многостраничным режимом.">
+  <meta property="og:type" content="website">
+
+  <!-- Типографика: неблокирующая загрузка (мгновенный старт в РФ без VPN на системных шрифтах) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+
+  <!-- Стили доски Whiteboard Pro -->
+  <link rel="stylesheet" href="css/main.css?v=30">
+  <link rel="stylesheet" href="css/widgets.css?v=17">
+
+  <!-- KaTeX для высококачественного полиграфического рендера математических и физических формул -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" media="print" onload="this.media='all'">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+</head>
+<body class="grid-lines">
+
+  <!-- Верхняя панель: упорядоченная 3-зонная структура -->
+  <header class="top-bar lb-header">
+    <!-- Зона 1 (слева): Документ, история и поиск -->
+    <div class="lb-header-left">
+      <div class="lb-brand-box" title="Whiteboard Pro">
+        <span class="lb-brand-mark" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="14" rx="2.5"/>
+            <path d="M8 20h8"/>
+            <path d="M12 18v2"/>
+            <path d="m8.5 12.5 2.5-3 2.5 2 3-3.5"/>
+          </svg>
+        </span>
+        <input type="text" id="boardTitleInput" class="lb-title-input" value="Новый урок" aria-label="Название урока" oninput="WB.setBoardTitle(this.value)" title="Название доски / урока">
+      </div>
+
+      <div class="lb-sep" aria-hidden="true"></div>
+
+      <div class="lb-icon-group" role="group" aria-label="История действий">
+        <button type="button" id="undoTopBtn" class="tool-btn lb-top-icon" onclick="WB.undo()" title="Отменить (Ctrl+Z)" aria-label="Отменить" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+        </button>
+        <button type="button" id="redoTopBtn" class="tool-btn lb-top-icon" onclick="WB.redo()" title="Повторить (Ctrl+Y)" aria-label="Повторить" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></svg>
+        </button>
+      </div>
+
+      <button type="button" id="openSearchModalBtn" class="lb-search-trigger" onclick="WB.openSearchModal()" title="Найти на доске (Ctrl+F)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <span class="search-trigger-lbl">Поиск</span>
+        <kbd class="lb-kbd-hint" aria-hidden="true">Ctrl+F</kbd>
+      </button>
+    </div>
+
+    <!-- Зона 2 (центр): Контент, сетка и масштаб -->
+    <div class="lb-header-center">
+      <input type="file" id="universalDocUpload" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="WB.handleUniversalFileUpload(event)">
+      <input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="WB.handleImageUpload(event)">
+      <input type="file" id="wbFileUpload" accept=".wb,.json" style="display:none" onchange="WB.loadProjectFile(event)">
+
+      <div id="addContentMenuWrap" class="dropdown-wrap add-content-menu-wrap">
+        <button type="button" id="addContentMenuBtn" class="tool-btn lb-top-pill lb-add-doc-btn" onclick="WB.toggleDropdown('addContentMenu', event)" title="Добавить документ (PDF, DOCX) или изображение" aria-label="Добавить файл">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <span>Добавить</span>
+        </button>
+        <div id="addContentMenu" class="dropdown-menu lb-add-dropdown">
+          <div class="actions-menu-hdr">ДОБАВИТЬ НА ДОСКУ</div>
+          <button type="button" id="addDocumentItemBtn" class="drop-item lb-add-item" onclick="WB.closeAllDropdowns(); document.getElementById('universalDocUpload').click();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span class="lb-add-item-text">
+              <strong>Документ</strong>
+              <small>PDF, DOCX</small>
+            </span>
+          </button>
+          <button type="button" id="addImageItemBtn" class="drop-item lb-add-item" onclick="WB.closeAllDropdowns(); document.getElementById('imgUpload').click();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <span class="lb-add-item-text">
+              <strong>Изображение</strong>
+              <small>PNG, JPG, WebP, SVG (или Ctrl+V)</small>
+            </span>
+          </button>
+          <div class="actions-menu-sep"></div>
+          <button type="button" id="addBlankDocItemBtn" class="drop-item lb-add-item" onclick="WB.createBlankDocumentOnBoard('grid')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="2"/>
+              <line x1="8" y1="9" x2="16" y2="9"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="12" y2="17"/>
+            </svg>
+            <span class="lb-add-item-text">
+              <strong>Новый документ</strong>
+              <small>Чистая тетрадь в режиме документа</small>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="lb-sep" aria-hidden="true"></div>
+
+      <!-- Фоновая сетка -->
+      <button type="button" id="gridToggleBtn" class="tool-btn lb-top-pill lb-grid-btn" onclick="WB.cycleGrid()" data-tooltip-bottom="Фоновая сетка" title="Фоновая сетка (клетка / точки / линейная / чистый лист)" aria-label="Фоновая сетка">
+        <span id="gridBtnIcon" class="grid-btn-icon" aria-hidden="true" style="display:inline-flex;align-items:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+          </svg>
+        </span>
+        <span class="grid-btn-lbl">Клетка</span>
+      </button>
+
+      <!-- Единый сгруппированный контрол масштаба -->
+      <div class="lb-zoom-group" role="group" aria-label="Масштаб доски">
+        <button type="button" class="tool-btn lb-zoom-btn" onclick="WB.changeZoom(-0.15)" title="Уменьшить масштаб" aria-label="Уменьшить">−</button>
+        <button type="button" id="zoomLabel" class="lb-zoom-readout" onclick="WB.resetCamera()" title="Сбросить масштаб до 100%">100%</button>
+        <button type="button" class="tool-btn lb-zoom-btn" onclick="WB.changeZoom(0.15)" title="Увеличить масштаб" aria-label="Увеличить">+</button>
+        <span class="lb-zoom-sep" aria-hidden="true"></span>
+        <button type="button" class="tool-btn lb-zoom-btn" id="fitAllBtn" onclick="WB.fitAllContent()" title="Показать всё содержимое доски" aria-label="Показать всё">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Зона 3 (справа): Тема, участники, приглашение, страницы и меню -->
+    <div class="lb-header-right">
+      <!-- Чистая иконка переключения темы (светлая / тёмная) -->
+      <button type="button" id="themeToggleBtn" class="tool-btn lb-top-icon lb-theme-btn" onclick="WB.toggleTheme()" data-tooltip-bottom="Тема" title="Сменить тему (светлая / тёмная)" aria-label="Сменить тему">
+        <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.95" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+        <svg class="theme-icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.95" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <div class="lb-sep" aria-hidden="true"></div>
+
+      <!-- Аватары участников и меню управления учениками -->
+      <div class="peers-wrap">
+        <div id="peersAvatarBar" class="peers-avatar-bar" onclick="WB.togglePeersDropdown(event)"></div>
+        <button type="button" class="peers-chevron-btn" onclick="WB.togglePeersDropdown(event)" title="Управление участниками" aria-label="Список участников">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div id="peersDropdown" class="peers-dropdown lb-peers-card">
+          <div id="peersDropdownList" class="lb-peers-list"></div>
+        </div>
+      </div>
+
+      <!-- Главная акцентная кнопка «Поделиться» -->
+      <button type="button" id="inviteStudentsBtn" class="lb-invite-btn" onclick="WB.openStudentInviteModal()" data-tooltip-bottom="Пригласить по ссылке и QR" title="Поделиться доской по ссылке и QR-коду">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span class="lb-invite-lbl">Поделиться</span>
+      </button>
+
+      <div class="lb-sep" aria-hidden="true"></div>
+
+      <!-- Раздел «Страницы» -->
+      <div class="pages-wrap">
+        <button type="button" id="pagesMenuBtn" class="tool-btn lb-top-icon pages-trigger-btn" onclick="WB.togglePagesDropdown(event)" data-tooltip-bottom="Страницы" title="Страницы доски" aria-label="Страницы">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+          <span id="pagesHeaderBadge" class="pages-count-badge" style="display:none;">1/1</span>
+        </button>
+        <div id="pagesDropdown" class="pages-dropdown">
+          <div class="pages-dropdown-hdr">СТРАНИЦЫ</div>
+          <div id="pagesListContainer" class="pages-list-container"></div>
+          <div class="pages-add-row">
+            <input type="text" id="newPageNameInput" class="pages-name-input" placeholder="Название страницы" onkeydown="if(event.key==='Enter'){event.preventDefault();WB.addPage();}">
+            <button type="button" class="pages-add-btn" onclick="WB.addPage()">Добавить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Меню действий (☰): Экспорт, сохранение/открытие проекта (.wb) и очистка страницы (стр. 6-7 PDF) -->
+      <div id="actionsMenuWrap" class="dropdown-wrap actions-menu-wrap">
+        <button type="button" id="actionsMenuBtn" class="tool-btn lb-top-icon lb-actions-btn" onclick="WB.toggleDropdown('actionsMenu', event)" data-tooltip-bottom="Меню действий" title="Меню действий" aria-label="Меню действий">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+        <div id="actionsMenu" class="dropdown-menu lb-actions-dropdown">
+          <div class="mobile-menu-zoom-block">
+            <div class="actions-menu-hdr">МАСШТАБ И ТЕМА</div>
+            <div class="mobile-zoom-row" onclick="event.stopPropagation()">
+              <button type="button" class="mobile-zoom-btn" onclick="WB.changeZoom(-0.15)" aria-label="Уменьшить масштаб">−</button>
+              <button type="button" class="mobile-zoom-btn mobile-zoom-reset" onclick="WB.resetCamera(); WB.closeAllDropdowns();">100%</button>
+              <button type="button" class="mobile-zoom-btn" onclick="WB.changeZoom(0.15)" aria-label="Увеличить масштаб">+</button>
+              <button type="button" class="mobile-zoom-btn mobile-zoom-fit" onclick="WB.fitAllContent(); WB.closeAllDropdowns();">Всё</button>
+            </div>
+            <button type="button" id="actionsThemeToggleBtn" class="drop-item" onclick="WB.toggleTheme(); WB.closeAllDropdowns();">
+              <svg id="actionsThemeToggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span id="actionsThemeToggleLabel">Ночная тема</span>
+            </button>
+            <div class="actions-menu-sep"></div>
+          </div>
+          <div class="actions-menu-hdr">ЭКСПОРТ И ПРОЕКТ</div>
+          <button type="button" class="drop-item" onclick="WB.downloadPDF(); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Скачать в PDF</span>
+          </button>
+          <button type="button" class="drop-item" onclick="WB.downloadBoard('png'); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Скачать PNG</span>
+          </button>
+          <button type="button" class="drop-item" onclick="WB.downloadBoard('jpg'); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Скачать JPG</span>
+          </button>
+          <button type="button" class="drop-item" onclick="WB.downloadSVG(); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Скачать вектор (SVG)</span>
+          </button>
+          <div class="actions-menu-sep teacher-only-sep"></div>
+          <button type="button" class="drop-item teacher-only-item" onclick="WB.saveProjectFile(); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Сохранить проект (.wb)</span>
+          </button>
+          <button type="button" class="drop-item teacher-only-item" onclick="WB.closeAllDropdowns(); document.getElementById('wbFileUpload').click();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Открыть проект (.wb)</span>
+          </button>
+          <div class="actions-menu-sep"></div>
+          <button type="button" class="drop-item" onclick="WB.closeAllDropdowns(); WB.openShortcutsModal();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+            <span>Горячие клавиши (?)</span>
+          </button>
+          <div class="actions-menu-sep teacher-only-sep"></div>
+          <button type="button" class="drop-item danger-item teacher-only-item" onclick="WB.clearBoard()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <span>Очистить страницу</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Левый верхний блок: Свёрнутый блок стиля (слева) + Режимы построения (правее) -->
+  <div id="topLeftModes" class="top-left-modes">
+    <!-- Сворачиваемый блок стиля (по умолчанию свёрнут: тип линии, цвет и толщина) -->
+    <div id="styleBlockWrap" class="style-collapsible-wrap" onclick="event.stopPropagation()">
+      <button type="button" id="styleCompactToggle" class="panel dock-block style-compact-toggle" onclick="WB.toggleStyleBlock(event)" aria-expanded="false" aria-controls="styleBlock" title="Тип линии, цвет и толщина" aria-label="Тип линии, цвет и толщина">
+        <span id="styleSummaryLinePreview" class="style-summary-line" aria-hidden="true">
+          <svg width="24" height="10" viewBox="0 0 24 10" fill="none"><line x1="2" y1="5" x2="22" y2="5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <span class="style-summary-sep" aria-hidden="true"></span>
+        <span id="styleSummaryColorDot" class="style-summary-color-dot" style="background:#1e293b;"></span>
+        <span id="styleSummarySize" class="style-summary-size">4px</span>
+        <svg class="style-summary-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+
+      <div id="styleBlock" class="panel dock-block style-unified-block style-collapsible-body" role="group" aria-label="Тип линии, цвет и толщина">
+        <!-- Верхний ряд: Выбор типа линии (Сплошная, Штриховая, Точечная, Штрихпунктирная) -->
+        <div class="style-lines-row" role="group" aria-label="Тип линии">
+          <button type="button" class="line-style-btn active" id="lineStyleSolidBtn" data-line-style="solid" onclick="WB.setLineStyle('solid')" title="Сплошная линия" aria-label="Сплошная линия">
+            <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+              <line x1="4" y1="6" x2="34" y2="6" stroke="currentColor" stroke-width="2.4" stroke-linecap="butt"/>
+            </svg>
+          </button>
+
+          <button type="button" class="line-style-btn" id="lineStyleDashedBtn" data-line-style="dashed" onclick="WB.setLineStyle('dashed')" title="Штриховая линия" aria-label="Штриховая линия">
+            <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+              <line x1="4" y1="6" x2="9" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <line x1="11.5" y1="6" x2="16.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <line x1="19" y1="6" x2="24" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <line x1="26.5" y1="6" x2="31.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <line x1="33.5" y1="6" x2="36" y2="6" stroke="currentColor" stroke-width="2.4"/>
+            </svg>
+          </button>
+
+          <button type="button" class="line-style-btn" id="lineStyleDottedBtn" data-line-style="dotted" onclick="WB.setLineStyle('dotted')" title="Точечная линия" aria-label="Точечная линия">
+            <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+              <rect x="4" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="8.8" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="13.6" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="18.4" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="23.2" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="28" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <rect x="32.8" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button type="button" class="line-style-btn" id="lineStyleDashdotBtn" data-line-style="dashdot" onclick="WB.setLineStyle('dashdot')" title="Штрихпунктирная линия" aria-label="Штрихпунктирная линия">
+            <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+              <line x1="3.5" y1="6" x2="9.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <rect x="12" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <line x1="17" y1="6" x2="23" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              <rect x="25.5" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              <line x1="30.5" y1="6" x2="35.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Нижний ряд: Выбор цвета (с иконкой палитры) и толщина линии -->
+        <div class="style-colors-row">
+          <div class="color-swatch active" style="background:#1e293b" onclick="WB.selectColor('#1e293b', this)" title="Чёрный"></div>
+          <div class="color-swatch" style="background:#ef4444" onclick="WB.selectColor('#ef4444', this)" title="Красный"></div>
+          <div class="color-swatch" style="background:#2563eb" onclick="WB.selectColor('#2563eb', this)" title="Синий"></div>
+          <div class="color-swatch" style="background:#16a34a" onclick="WB.selectColor('#16a34a', this)" title="Зелёный"></div>
+          <div class="color-swatch" style="background:#f59e0b" onclick="WB.selectColor('#f59e0b', this)" title="Оранжевый"></div>
+
+          <label class="color-palette-btn" title="Свой цвет (палитра)" data-tooltip="Свой цвет">
+            <input type="color" id="colorPicker" value="#1e293b" oninput="WB.selectColor(this.value, null)" onchange="WB.selectColor(this.value, null)" aria-label="Свой цвет">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+              <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+              <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+              <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+              <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+            </svg>
+          </label>
+
+          <div class="divider"></div>
+
+          <div class="size-control" title="Толщина линий и фигур">
+            <input type="range" id="sizePicker" min="2" max="24" value="4" oninput="WB.updateSizeUI(this.value)" aria-label="Толщина линии">
+            <span id="sizeValueLabel">4px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modesBlock" class="panel dock-block modes-uniform-block" role="group" aria-label="Режимы построения">
+      <button type="button" class="tool-btn mode-uniform-btn" id="autoShapeBtn" aria-pressed="false" onclick="WB.toggleAutoShape()" title="Линейный режим: построение линий от точки к точке (выход — повторное нажатие или Enter)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="5.5" cy="18.5" r="2.2"/>
+          <circle cx="18.5" cy="5.5" r="2.2"/>
+          <line x1="7.1" y1="16.9" x2="16.9" y2="7.1"/>
+        </svg>
+        <span>Линейный</span>
+      </button>
+      <button type="button" class="tool-btn mode-uniform-btn active" id="snapGridBtn" onclick="WB.toggleSnapToGrid()" title="Построение фигур с привязкой к узлам клеток (G)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <g transform="rotate(45 12 12)">
+            <path d="M6.5 18.5V10.5a5.5 5.5 0 0 1 11 0v8h-3.6v-8a1.9 1.9 0 0 0-3.8 0v8Z"/>
+            <line x1="6.5" y1="15" x2="10.1" y2="15"/>
+            <line x1="13.9" y1="15" x2="17.5" y2="15"/>
+          </g>
+        </svg>
+        <span>К узлам</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Правые плавающие кнопки LearnBoard: Вернуться к прежнему месту / Переместиться к участнику / Притянуть к себе -->
+  <div id="floatingPeerControls" class="floating-peer-controls">
+    <button type="button" id="returnPrevSpotBtn" class="float-peer-btn return-spot" onclick="WB.returnToPrevPlace()" data-tooltip-left="Вернуться к прежнему месту" title="Вернуться к прежнему месту">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9 14 4 9l5-5"/>
+        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0A5.5 5.5 0 0 1 14.5 20H11"/>
+        <circle cx="12" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+    </button>
+    <button type="button" id="jumpToPeerBtn" class="float-peer-btn jump" onclick="WB.jumpToPeer()" data-tooltip-left="Переместиться к участнику" title="Переместиться к участнику">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m22 2-7 20-4-9-9-4Z"/>
+        <path d="M22 2 11 13"/>
+      </svg>
+    </button>
+    <button type="button" id="summonStudentsBtn" class="float-peer-btn summon" onclick="WB.summonStudentsToMe()" data-tooltip-left="Притянуть учеников" title="Притянуть всех учеников к вашей области доски">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="7"/>
+        <circle cx="12" cy="12" r="2.5"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Плашка уведомлений (Toast) -->
+  <div id="toastBanner" class="wb-toast" role="status" aria-live="polite" aria-atomic="true">
+    <span id="toastIcon" class="wb-toast-icon" aria-hidden="true"></span>
+    <span id="toastText" class="wb-toast-text">Уведомление</span>
+    <button type="button" class="wb-toast-close" onclick="WB.hideToast()" aria-label="Скрыть уведомление">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <!-- Модальное окно «Найти на доске» (LearnBoard style) -->
+  <div id="searchBoardModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-window search-modal-window">
+      <div class="search-modal-head">
+        <div>
+          <h3 style="font-size:17px; font-weight:700;">Найти на доске</h3>
+          <p class="search-subtitle">Текущая страница</p>
+        </div>
+        <button type="button" class="close-modal" onclick="WB.closeSearchModal()" title="Закрыть (Esc)">×</button>
+      </div>
+
+      <div class="search-input-wrap">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" id="searchBoardInput" class="search-board-input" placeholder="Название или текст" oninput="WB.onSearchInput(this.value)" autocomplete="off">
+      </div>
+
+      <div class="search-tabs-bar">
+        <button type="button" class="search-tab-btn active" data-cat="all" onclick="WB.setSearchCategory('all')">Все</button>
+        <button type="button" class="search-tab-btn" data-cat="books" onclick="WB.setSearchCategory('books')">Книги</button>
+        <button type="button" class="search-tab-btn" data-cat="text" onclick="WB.setSearchCategory('text')">Текст</button>
+        <button type="button" class="search-tab-btn" data-cat="other" onclick="WB.setSearchCategory('other')">Другое</button>
+      </div>
+
+      <div class="search-meta-row">
+        <span id="searchCountLabel">На этой странице · 0</span>
+        <span>Нажмите, чтобы перейти</span>
+      </div>
+
+      <div id="searchResultsList" class="search-results-list"></div>
+
+      <div class="search-modal-footer">
+        <span>↑ ↓ выбрать · Enter перейти</span>
+        <span>Esc закрыть</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Неблокирующее окно подтверждения действия (вместо системного confirm) -->
+  <div id="confirmActionModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirmActionTitle">
+    <div class="modal-window confirm-modal-window">
+      <div class="confirm-modal-head">
+        <div class="confirm-modal-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3 id="confirmActionTitle" class="confirm-modal-title">Подтвердите действие</h3>
+        <button type="button" class="close-modal" onclick="WB.closeConfirmModal()" aria-label="Закрыть">×</button>
+      </div>
+      <p id="confirmActionMessage" class="confirm-modal-desc">Вы уверены?</p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="tool-btn confirm-cancel-btn" onclick="WB.closeConfirmModal()">Отмена</button>
+        <button type="button" id="confirmActionAcceptBtn" class="tool-btn confirm-danger-btn" onclick="WB.acceptConfirmModal()">Подтвердить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Справочник горячих клавиш (?) -->
+  <div id="shortcutsModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="shortcutsModalTitle">
+    <div class="modal-window shortcuts-modal-window">
+      <div class="modal-header" style="margin-bottom: 12px;">
+        <div style="display:flex; align-items:center; gap:9px;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M6 12h.01M10 12h.01M14 12h.01M18 12h.01M7 16h10"/></svg>
+          <h3 id="shortcutsModalTitle" style="font-size: 16px; font-weight: 700;">Горячие клавиши Whiteboard Pro</h3>
+        </div>
+        <button type="button" class="close-modal" onclick="WB.closeShortcutsModal()" aria-label="Закрыть">×</button>
+      </div>
+      <div class="shortcuts-grid">
+        <div class="shortcuts-col">
+          <div class="shortcuts-group-title">Инструменты</div>
+          <div class="shortcut-row"><span>Выделить / переместить</span><span class="shortcut-keys"><kbd>V</kbd></span></div>
+          <div class="shortcut-row"><span>Рука (панорамирование)</span><span class="shortcut-keys"><kbd>H</kbd><span class="kbd-sep">/</span><kbd>Space</kbd></span></div>
+          <div class="shortcut-row"><span>Ручка / Маркер / Ластик</span><span class="shortcut-keys"><kbd>P</kbd><kbd>M</kbd><kbd>E</kbd></span></div>
+          <div class="shortcut-row"><span>Лазерная указка</span><span class="shortcut-keys"><kbd>L</kbd></span></div>
+          <div class="shortcut-row"><span>Фигуры (стрелка, прямоуг., круг)</span><span class="shortcut-keys"><kbd>A</kbd><kbd>R</kbd><kbd>C</kbd></span></div>
+          <div class="shortcut-row"><span>Привязка к узлам сетки</span><span class="shortcut-keys"><kbd>G</kbd></span></div>
+          <div class="shortcuts-group-title" style="margin-top:12px;">Вставка и справочники</div>
+          <div class="shortcut-row"><span>Текст / Стикер</span><span class="shortcut-keys"><kbd>T</kbd><span class="kbd-sep">/</span><kbd>S</kbd></span></div>
+          <div class="shortcut-row"><span>Формула LaTeX</span><span class="shortcut-keys"><kbd>X</kbd></span></div>
+          <div class="shortcut-row"><span>Физика ЕГЭ (Кодификатор)</span><span class="shortcut-keys"><kbd>F</kbd></span></div>
+          <div class="shortcut-row"><span>Поиск по странице</span><span class="shortcut-keys"><kbd>Ctrl+F</kbd></span></div>
+        </div>
+        <div class="shortcuts-col">
+          <div class="shortcuts-group-title">Редактирование и буфер</div>
+          <div class="shortcut-row"><span>Отменить / Повторить</span><span class="shortcut-keys"><kbd>Ctrl+Z</kbd><span class="kbd-sep">/</span><kbd>Ctrl+Y</kbd></span></div>
+          <div class="shortcut-row"><span>Копировать / Вырезать / Вставить</span><span class="shortcut-keys"><kbd>Ctrl+C</kbd><kbd>X</kbd><kbd>V</kbd></span></div>
+          <div class="shortcut-row"><span>Дублировать выделенное</span><span class="shortcut-keys"><kbd>Ctrl+D</kbd></span></div>
+          <div class="shortcut-row"><span>Выделить всё на странице</span><span class="shortcut-keys"><kbd>Ctrl+A</kbd></span></div>
+          <div class="shortcut-row"><span>Сдвиг выделенного (точно / сетка)</span><span class="shortcut-keys"><kbd>←↑↓→</kbd><span class="kbd-sep">/</span><kbd>Shift</kbd></span></div>
+          <div class="shortcut-row"><span>Удалить выделенное</span><span class="shortcut-keys"><kbd>Del</kbd></span></div>
+          <div class="shortcuts-group-title" style="margin-top:12px;">Масштаб и 3D-фигуры</div>
+          <div class="shortcut-row"><span>Масштаб (+ / − / 100%)</span><span class="shortcut-keys"><kbd>Ctrl++</kbd><kbd>Ctrl+-</kbd><kbd>Ctrl+0</kbd></span></div>
+          <div class="shortcut-row"><span>Режимы 3D-фигуры (при выборе)</span><span class="shortcut-keys"><kbd>1</kbd><span class="kbd-sep">–</span><kbd>7</kbd></span></div>
+          <div class="shortcut-row"><span>Снять выделение / закрыть окно</span><span class="shortcut-keys"><kbd>Esc</kbd></span></div>
+          <div class="shortcut-row"><span>Открыть эту справку</span><span class="shortcut-keys"><kbd>?</kbd></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF-читалка и редактор в стиле LearnBoard с центральной белой пилюлей -->
+  <div id="pdfEditorModal" class="modal-backdrop pdf-lb-backdrop" style="display: none;">
+    <div class="pdf-lb-workspace">
+      <!-- Сворачиваемый блок стиля (тип линии, цвет и толщина) в левом верхнем углу PDF-режима -->
+      <div id="pdfStyleBlockWrap" class="style-collapsible-wrap pdf-style-corner-wrap" onclick="event.stopPropagation()">
+        <button type="button" id="pdfStyleCompactToggle" class="panel dock-block style-compact-toggle" onclick="WB.togglePdfStyleBlock(event)" aria-expanded="false" aria-controls="pdfStyleBlock" title="Тип линии, цвет и толщина для PDF" aria-label="Стиль линии, цвет и толщина для PDF">
+          <span id="pdfStyleSummaryLinePreview" class="style-summary-line" aria-hidden="true">
+            <svg width="24" height="10" viewBox="0 0 24 10" fill="none"><line x1="2" y1="5" x2="22" y2="5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          </span>
+          <span class="style-summary-sep" aria-hidden="true"></span>
+          <span id="pdfStyleSummaryColorDot" class="style-summary-color-dot" style="background:#ef4444;"></span>
+          <span id="pdfStyleSummarySize" class="style-summary-size">4px</span>
+          <svg class="style-summary-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+
+        <div id="pdfStyleBlock" class="panel dock-block style-unified-block style-collapsible-body" role="group" aria-label="Тип линии, цвет и толщина для PDF">
+          <div class="style-lines-row" role="group" aria-label="Тип линии по PDF">
+            <button type="button" class="line-style-btn pdf-line-style-btn active" data-pdf-line-style="solid" onclick="WB.setPdfLineStyle('solid')" title="Сплошная линия" aria-label="Сплошная линия">
+              <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+                <line x1="4" y1="6" x2="34" y2="6" stroke="currentColor" stroke-width="2.4" stroke-linecap="butt"/>
+              </svg>
+            </button>
+            <button type="button" class="line-style-btn pdf-line-style-btn" data-pdf-line-style="dashed" onclick="WB.setPdfLineStyle('dashed')" title="Штриховая линия" aria-label="Штриховая линия">
+              <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+                <line x1="4" y1="6" x2="9" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <line x1="11.5" y1="6" x2="16.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <line x1="19" y1="6" x2="24" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <line x1="26.5" y1="6" x2="31.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <line x1="33.5" y1="6" x2="36" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              </svg>
+            </button>
+            <button type="button" class="line-style-btn pdf-line-style-btn" data-pdf-line-style="dotted" onclick="WB.setPdfLineStyle('dotted')" title="Точечная линия" aria-label="Точечная линия">
+              <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+                <rect x="4" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="8.8" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="13.6" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="18.4" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="23.2" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="28" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <rect x="32.8" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+              </svg>
+            </button>
+            <button type="button" class="line-style-btn pdf-line-style-btn" data-pdf-line-style="dashdot" onclick="WB.setPdfLineStyle('dashdot')" title="Штрихпунктирная линия" aria-label="Штрихпунктирная линия">
+              <svg width="38" height="12" viewBox="0 0 38 12" fill="none" aria-hidden="true">
+                <line x1="3.5" y1="6" x2="9.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <rect x="12" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <line x1="17" y1="6" x2="23" y2="6" stroke="currentColor" stroke-width="2.4"/>
+                <rect x="25.5" y="4.8" width="2.4" height="2.4" fill="currentColor"/>
+                <line x1="30.5" y1="6" x2="35.5" y2="6" stroke="currentColor" stroke-width="2.4"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="style-colors-row">
+            <div class="color-swatch pdf-color-swatch" data-color="#1e293b" style="background:#1e293b" onclick="WB.selectPdfColor('#1e293b', this)" title="Чёрный"></div>
+            <div class="color-swatch pdf-color-swatch active" data-color="#ef4444" style="background:#ef4444" onclick="WB.selectPdfColor('#ef4444', this)" title="Красный"></div>
+            <div class="color-swatch pdf-color-swatch" data-color="#2563eb" style="background:#2563eb" onclick="WB.selectPdfColor('#2563eb', this)" title="Синий"></div>
+            <div class="color-swatch pdf-color-swatch" data-color="#16a34a" style="background:#16a34a" onclick="WB.selectPdfColor('#16a34a', this)" title="Зелёный"></div>
+            <div class="color-swatch pdf-color-swatch" data-color="#facc15" style="background:#facc15" onclick="WB.selectPdfColor('#facc15', this)" title="Жёлтый"></div>
+
+            <label class="color-palette-btn" title="Свой цвет (палитра)">
+              <input type="color" id="pdfStyleColorPicker" value="#ef4444" oninput="WB.selectPdfColor(this.value, null)" onchange="WB.selectPdfColor(this.value, null)" aria-label="Свой цвет по PDF">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+                <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+                <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+                <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+              </svg>
+            </label>
+
+            <div class="divider"></div>
+
+            <div class="size-control" title="Толщина маркера или фломастера">
+              <input type="range" id="pdfStyleSizePicker" min="2" max="36" value="4" oninput="WB.updatePdfSizeUI(this.value)" aria-label="Толщина линии в PDF">
+              <span id="pdfStyleSizeLabel">4px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pdf-floating-pill-wrap">
+        <div class="pdf-floating-pill">
+          <span id="pdfEditorFormatBadge" class="pdf-doc-format-badge">PDF</span>
+          <span id="pdfEditorTitle" class="pdf-pill-title">Документ</span>
+          <span class="pdf-pill-sep"></span>
+
+          <button type="button" class="pdf-pill-icon-btn" onclick="WB.prevPdfEditorPage()" title="Предыдущая страница" aria-label="Предыдущая страница">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="pdf-page-dropdown-wrap">
+            <button type="button" id="pdfPageSelectBtn" class="pdf-pill-page-btn" onclick="WB.togglePdfThumbsPopover(event)" title="Выбрать страницу">
+              <span id="pdfEditorPageIndicator">Стр. 1 из 1</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.7;"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="pdfThumbsPopover" class="pdf-thumbs-popover">
+              <div id="pdfEditorThumbs" class="pdf-thumbs-grid"></div>
+            </div>
+          </div>
+          <button type="button" class="pdf-pill-icon-btn" onclick="WB.nextPdfEditorPage()" title="Следующая страница" aria-label="Следующая страница">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+
+          <span class="pdf-pill-sep"></span>
+
+          <button type="button" class="pdf-pill-icon-btn pdf-tool-icon active" id="pdfToolCropBtn" onclick="WB.setPdfEditorTool('crop')" title="Выделить фрагмент на странице и вставить на доску" aria-label="Вырезать фрагмент">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>
+            </svg>
+          </button>
+          <button type="button" class="pdf-pill-btn confirm" id="pdfCropConfirmBtn" onclick="WB.cropPdfSelectionToBoard()" style="display:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>На доску</span>
+          </button>
+          <button type="button" class="pdf-pill-btn photo-crop-apply" id="photoCropApplyBtn" onclick="WB.cropPhotoInPlace()" style="display:none;" title="Обрезать само фото по выделенной области">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+            </svg>
+            <span>Обрезать фото</span>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn" id="photoRotateLeftBtn" onclick="WB.transformCurrentPhotoPage('rot-left')" style="display:none;" title="Повернуть фото на 90° влево" aria-label="Повернуть на 90° влево">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn" id="photoRotateRightBtn" onclick="WB.transformCurrentPhotoPage('rot-right')" style="display:none;" title="Повернуть фото на 90° вправо" aria-label="Повернуть на 90° вправо">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn" id="pdfUndoBtn" onclick="WB.pdfUndo()" title="Отменить изменение в PDF (Ctrl+Z)" aria-label="Отменить" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn" id="pdfRedoBtn" onclick="WB.pdfRedo()" title="Повторить изменение в PDF (Ctrl+Y)" aria-label="Повторить" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13"/></svg>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn pdf-teacher-save-btn" onclick="WB.savePdfAnnotationsToPage()" title="Сохранить пометки на всех страницах" aria-label="Сохранить пометки">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+            </svg>
+          </button>
+
+          <span class="pdf-pill-sep"></span>
+
+          <button type="button" class="pdf-pill-icon-btn" onclick="WB.changePdfEditorZoom(-0.15)" title="Уменьшить масштаб" aria-label="Уменьшить">−</button>
+          <span id="pdfZoomLabel" class="pdf-pill-zoom-lbl">100%</span>
+          <button type="button" class="pdf-pill-icon-btn" onclick="WB.changePdfEditorZoom(0.15)" title="Увеличить масштаб" aria-label="Увеличить">+</button>
+
+          <span class="pdf-pill-sep"></span>
+
+          <button type="button" class="pdf-pill-icon-btn" id="pdfDownloadPdfBtn" onclick="WB.downloadEditedDocument()" title="Скачать PDF (все страницы с пометками)" aria-label="Скачать документ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <button type="button" class="pdf-pill-icon-btn" id="pdfEditorCloseXBtn" onclick="WB.closePdfEditor()" title="Закрыть редактор документа (Esc)" aria-label="Закрыть">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Лента Microsoft Word (отображается только при работе с DOCX) -->
+      <div id="wordRibbonWrap" class="word-ribbon-wrap" style="display: none;">
+        <div id="wordRibbon" class="word-ribbon" role="toolbar" aria-label="Панель Microsoft Word для DOCX">
+          <button type="button" id="wordModeToggleBtn" class="word-ribbon-btn word-mode-btn active" onmousedown="event.preventDefault()" onclick="WB.ensureWordEditMode()" title="Режим редактирования текста Word">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <span>Текст</span>
+          </button>
+
+          <span class="word-ribbon-sep"></span>
+
+          <select id="wordStyleSelect" class="word-ribbon-select" aria-label="Стиль абзаца" onchange="WB.applyWordBlockStyle(this.value)">
+            <option value="P">Обычный</option>
+            <option value="H1">Заголовок 1</option>
+            <option value="H2">Заголовок 2</option>
+            <option value="H3">Заголовок 3</option>
+          </select>
+
+          <select id="wordFontSelect" class="word-ribbon-select" aria-label="Шрифт" onchange="WB.applyWordFontFamily(this.value)">
+            <option value="Calibri">Calibri</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Arial">Arial</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+          </select>
+
+          <select id="wordSizeSelect" class="word-ribbon-select compact" aria-label="Размер шрифта" onchange="WB.applyWordFontSize(this.value)">
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12" selected>12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+            <option value="18">18</option>
+            <option value="20">20</option>
+            <option value="24">24</option>
+            <option value="28">28</option>
+            <option value="36">36</option>
+          </select>
+
+          <span class="word-ribbon-sep"></span>
+
+          <button type="button" id="wordBoldBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('bold')" title="Полужирный (Ctrl+B)" aria-label="Полужирный"><strong>Ж</strong></button>
+          <button type="button" id="wordItalicBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('italic')" title="Курсив (Ctrl+I)" aria-label="Курсив"><em>К</em></button>
+          <button type="button" id="wordUnderlineBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('underline')" title="Подчёркнутый (Ctrl+U)" aria-label="Подчёркнутый"><u>Ч</u></button>
+          <button type="button" id="wordStrikeBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('strikeThrough')" title="Зачёркнутый" aria-label="Зачёркнутый"><s>S</s></button>
+
+          <label class="word-ribbon-color" title="Цвет текста">
+            <span class="word-color-letter">A</span>
+            <span id="wordTextColorBar" class="word-color-bar" style="background:#1d4ed8;"></span>
+            <input type="color" id="wordTextColorInput" value="#1d4ed8" aria-label="Цвет текста" oninput="WB.applyWordTextColor(this.value)">
+          </label>
+          <label class="word-ribbon-color" title="Цвет выделения текста">
+            <span class="word-color-letter hl">ab</span>
+            <span id="wordHighlightColorBar" class="word-color-bar" style="background:#fef08a;"></span>
+            <input type="color" id="wordHighlightColorInput" value="#fef08a" aria-label="Цвет выделения" oninput="WB.applyWordHighlight(this.value)">
+          </label>
+
+          <span class="word-ribbon-sep"></span>
+
+          <button type="button" id="wordAlignLeftBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('justifyLeft')" title="По левому краю" aria-label="По левому краю">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+          </button>
+          <button type="button" id="wordAlignCenterBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('justifyCenter')" title="По центру" aria-label="По центру">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+          </button>
+          <button type="button" id="wordAlignRightBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('justifyRight')" title="По правому краю" aria-label="По правому краю">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <button type="button" id="wordAlignJustifyBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('justifyFull')" title="По ширине" aria-label="По ширине">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+
+          <span class="word-ribbon-sep"></span>
+
+          <button type="button" id="wordUlBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('insertUnorderedList')" title="Маркированный список" aria-label="Маркированный список">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>
+          </button>
+          <button type="button" id="wordOlBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('insertOrderedList')" title="Нумерованный список" aria-label="Нумерованный список">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+          </button>
+          <button type="button" id="wordInsertTableBtn" class="word-ribbon-btn" onmousedown="event.preventDefault()" onclick="WB.insertWordTable()" title="Вставить редактируемую таблицу Word">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="10" y1="3" x2="10" y2="21"/></svg>
+            <span>Таблица</span>
+          </button>
+          <button type="button" id="wordClearFmtBtn" class="word-ribbon-btn icon" onmousedown="event.preventDefault()" onclick="WB.execWordCommand('removeFormat')" title="Очистить форматирование" aria-label="Очистить форматирование">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="3" y1="21" x2="21" y2="3"/></svg>
+          </button>
+
+          <span id="wordRibbonWordCount" class="word-ribbon-stat">Слов: 0</span>
+        </div>
+      </div>
+
+      <!-- Поповер выбора разметки для кнопок «Пустая страница» (снизу и сбоку) -->
+      <div id="pdfAddPagePopover" class="pdf-add-page-popover" role="menu" aria-label="Тип новой страницы" onclick="event.stopPropagation()">
+        <div id="pdfAddPagePopoverTitle" class="pdf-add-page-header">Новая страница ниже</div>
+        <button type="button" class="pdf-add-page-opt active" data-blank-style="grid" onclick="WB.insertBlankPdfPageFromMenu('grid')">
+          <span class="pdf-blank-preview pdf-blank-preview-grid" aria-hidden="true"></span>
+          <span class="pdf-add-page-opt-text">
+            <strong>Клетчатая</strong>
+            <small>По умолчанию</small>
+          </span>
+        </button>
+        <button type="button" class="pdf-add-page-opt" data-blank-style="ruled" onclick="WB.insertBlankPdfPageFromMenu('ruled')">
+          <span class="pdf-blank-preview pdf-blank-preview-ruled" aria-hidden="true"></span>
+          <span class="pdf-add-page-opt-text">
+            <strong>Линейчатая</strong>
+            <small>Горизонтальные линии</small>
+          </span>
+        </button>
+        <button type="button" class="pdf-add-page-opt" data-blank-style="blank" onclick="WB.insertBlankPdfPageFromMenu('blank')">
+          <span class="pdf-blank-preview pdf-blank-preview-blank" aria-hidden="true"></span>
+          <span class="pdf-add-page-opt-text">
+            <strong>Без разметки</strong>
+            <small>Чистый белый лист</small>
+          </span>
+        </button>
+      </div>
+
+      <div class="pdf-canvas-viewport" id="pdfCanvasViewport">
+        <div id="pdfPagesStack" class="pdf-pages-stack" data-testid="pdf-pages-stack"></div>
+      </div>
+
+      <div id="pdfFloatingToolsLayer" class="pdf-floating-tools-layer"></div>
+    </div>
+  </div>
+
+  <!-- Модальное окно «Справочник формул по физике (Кодификатор ЕГЭ 2027 ФИПИ)» -->
+  <div id="physicsModal" class="modal-backdrop phys-modal-backdrop" style="display: none;" onclick="if (event.target === this) WB.closePhysicsModal()">
+    <div class="modal-window physics-modal-window" role="dialog" aria-modal="true" aria-labelledby="physicsModalTitle">
+      <!-- Шапка в стиле LearnBoard -->
+      <div class="phys-modal-header">
+        <div class="phys-header-brand">
+          <div class="phys-brand-mark" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4.2"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(120 12 12)"/>
+            </svg>
+          </div>
+          <div class="phys-brand-copy">
+            <h3 id="physicsModalTitle">Кодификатор ЕГЭ 2027</h3>
+            <p>Справочник формул ФИПИ по физике</p>
+          </div>
+        </div>
+        <div class="phys-header-actions">
+          <button type="button" class="phys-pdf-btn" onclick="WB.openCodifierPdfInEditor()" title="Открыть официальный документ ФИ-11 ЕГЭ 2027 КОДИФ.pdf в PDF-редакторе">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="13" y2="17"/>
+            </svg>
+            <span>PDF кодификатора</span>
+          </button>
+          <button type="button" class="close-modal phys-close-btn" onclick="WB.closePhysicsModal()" aria-label="Закрыть кодификатор">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Двухколоночная рабочая область: навигация по разделам слева + каталог справа -->
+      <div class="phys-modal-body">
+        <aside class="phys-sidebar" aria-label="Разделы кодификатора">
+          <div id="physicsSectionsBar" class="physics-sections-bar"></div>
+        </aside>
+
+        <div class="phys-workspace">
+          <!-- Поиск + переключатель подписи закона -->
+          <div class="physics-search-row">
+            <div class="phys-search-box">
+              <svg class="phys-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" id="physicsSearchInput" class="phys-search-input" placeholder="Поиск формулы, закона или кода ФИПИ (напр. 1.2.4, Ом, КПД)..." oninput="WB.onPhysicsSearchInput(this.value)" autocomplete="off">
+              <button type="button" id="physicsSearchClearBtn" class="phys-search-clear" style="display:none;" onclick="WB.clearPhysicsSearch()" aria-label="Очистить поиск">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <label class="phys-toggle-label" title="Добавлять название закона и код ФИПИ над формулой на доске">
+              <input type="checkbox" id="physIncludeTitleCheckbox" class="phys-toggle-input" checked>
+              <span class="phys-toggle-track" aria-hidden="true"><span class="phys-toggle-thumb"></span></span>
+              <span class="phys-toggle-text">Подписывать закон</span>
+            </label>
+          </div>
+
+          <!-- Горизонтальная полоса подтем (для узких экранов) -->
+          <div id="physicsSubtopicsBar" class="physics-subtopics-bar"></div>
+
+          <!-- Контекстная строка (текущий раздел/поиск и количество формул) -->
+          <div class="phys-context-bar">
+            <div id="physicsBreadcrumb" class="phys-breadcrumb"></div>
+            <span id="physicsCountLabel" class="phys-count-label"></span>
+          </div>
+
+          <!-- Сетка карточек с KaTeX формулами -->
+          <div id="physicsFormulasGrid" class="physics-formulas-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Единое модальное окно «Поделиться» (временная ссылка, пока преподаватель в доске + QR-код) -->
+  <div id="studentInviteModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-window lb-share-modal">
+      <div class="modal-header lb-share-header">
+        <h3 style="font-size:18px; font-weight:700;">Поделиться</h3>
+        <button type="button" class="close-modal" onclick="WB.closeStudentInviteModal()" aria-label="Закрыть">×</button>
+      </div>
+
+      <!-- Карточка переключателя «Доска открыта для учеников» -->
+      <div class="lb-share-access-card">
+        <div class="lb-share-access-left">
+          <div class="lb-share-globe-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <div class="lb-share-access-text">
+            <div class="lb-share-access-title">Доска открыта для учеников</div>
+            <div id="shareSyncTransportSub" class="lb-share-access-sub">Временная ссылка работает, пока вы в доске</div>
+          </div>
+        </div>
+        <label class="lb-switch" title="Открыть или закрыть доступ по временной ссылке">
+          <input type="checkbox" id="boardOpenToggle" checked onchange="WB.toggleBoardAccess(this.checked)">
+          <span class="lb-switch-slider"></span>
+        </label>
+      </div>
+
+      <div id="shareActiveLinkWrap" class="lb-share-body">
+        <!-- Индикатор создания временной ссылки -->
+        <div id="tempLinkLoadingRow" class="lb-temp-loading" style="display: none;">
+          <span class="lb-temp-spinner" aria-hidden="true"></span>
+          <span>Создаём временную ссылку…</span>
+        </div>
+
+        <!-- Готовая временная интернет-ссылка -->
+        <div id="sharePublicLinkBlock" style="display: none;">
+          <div class="lb-share-url-box" onclick="WB.copyStudentLink()" title="Нажмите, чтобы скопировать ссылку">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            <input type="text" id="studentInviteUrl" class="lb-share-url-input" readonly aria-label="Временная ссылка для учеников">
+          </div>
+
+          <button type="button" id="copyStudentLinkBtn" class="lb-copy-link-btn" onclick="WB.copyStudentLink()">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span id="copyStudentLinkLabel">Копировать ссылку</span>
+          </button>
+
+          <div class="lb-share-sec-row">
+            <a id="openStudentPageLink" class="lb-share-sec-btn" href="#" target="_blank" rel="noopener noreferrer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              <span>Открыть страницу</span>
+            </a>
+            <button type="button" id="createFreshRoomBtn" class="lb-share-sec-btn" onclick="WB.createFreshInviteRoom()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              <span>Новая ссылка</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="shareRoomStatusNote" class="lb-share-status-note" role="status" aria-live="polite" style="display: none;"></div>
+
+        <div id="tempLinkRetryWrap" class="lb-temp-retry-wrap" style="display: none;">
+          <button type="button" id="retryTempLinkBtn" class="lb-share-sec-btn" onclick="WB.ensureTemporaryLink(false, true)">Создать временную ссылку заново</button>
+        </div>
+
+        <!-- Сканируемый ISO QR-код -->
+        <div id="studentQrCardWrap" class="student-qr-card lb-qr-compact" style="display: none;">
+          <div id="studentQrContainer"></div>
+          <p style="font-size:11.5px; margin-top:6px; font-weight:600; color:#475569; text-align:center;">
+            QR-код для быстрого входа с телефона или планшета
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран уведомления, если преподаватель вышел или закрыл доступ -->
+  <div id="roomClosedOverlay" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="roomClosedTitle">
+    <div class="modal-window lb-room-closed-modal">
+      <div class="lb-room-closed-icon" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <h3 id="roomClosedTitle">Урок завершён</h3>
+      <p id="roomClosedDesc">Преподаватель вышел из доски. Временная ссылка больше не активна.</p>
+      <a href="/" onclick="if(window.location.protocol==='file:'){window.location.reload();return false;}" class="lb-copy-link-btn lb-room-closed-btn">Открыть чистую доску</a>
+    </div>
+  </div>
+
+  <!-- Окно выбора имени ученика при заходе по ссылке -->
+  <div id="studentJoinNameModal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="studentJoinNameTitle">
+    <div class="modal-window lb-join-name-modal">
+      <div class="lb-join-name-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h3 id="studentJoinNameTitle">Добро пожаловать на доску</h3>
+      <p class="lb-join-name-desc">Введите ваше имя — оно отобразится у преподавателя и рядом с вашим курсором.</p>
+      <form class="lb-join-name-form" onsubmit="event.preventDefault(); WB.submitStudentJoinName(false);">
+        <input
+          type="text"
+          id="studentJoinNameInput"
+          class="lb-join-name-input"
+          maxlength="40"
+          autocomplete="name"
+          placeholder="Например: Анна Иванова"
+          aria-label="Ваше имя"
+        />
+        <div class="lb-join-name-actions">
+          <button type="submit" class="lb-copy-link-btn lb-join-name-submit">Войти на доску</button>
+          <button type="button" class="lb-join-name-skip" onclick="WB.submitStudentJoinName(true)">Войти как «Ученик»</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно «Редактор LaTeX формул (Geoma style)» -->
+  <div id="latexModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-window" style="max-width: 580px;">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:22px; color:var(--accent); font-weight:bold;">∑</span>
+          <h3 style="font-size:16px;">Редактор математических формул LaTeX</h3>
+        </div>
+        <button class="close-modal" onclick="WB.closeLatexModal()">×</button>
+      </div>
+
+      <!-- Живой предпросмотр формулы -->
+      <label class="modal-label">Предпросмотр формулы высокой чёткости:</label>
+      <div id="latexPreview" class="latex-preview-box">
+        <span style="opacity:0.4;">Предпросмотр формулы...</span>
+      </div>
+
+      <!-- Быстрые символы и конструкции -->
+      <label class="modal-label">Быстрые символы и шаблоны (кликните для вставки):</label>
+      <div class="math-symbols-grid">
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\frac{a}{b}')" title="Дробь">a/b</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('^{2}')" title="Квадрат">x²</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('_{i}')" title="Нижний индекс">xᵢ</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\sqrt{x}')" title="Квадратный корень">√x</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\sqrt[n]{x}')" title="Корень n-й степени">ⁿ√x</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\pm')" title="Плюс-минус">±</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\cdot')" title="Умножение">·</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\times')" title="Крестик">×</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\div')" title="Деление">÷</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\neq')" title="Не равно">≠</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\approx')" title="Приблизительно">≈</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\leq')" title="Меньше или равно">≤</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\geq')" title="Больше или равно">≥</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\infty')" title="Бесконечность">∞</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\pi')" title="Число Пи">π</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\alpha')" title="Альфа">α</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\beta')" title="Бета">β</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\gamma')" title="Гамма">γ</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\theta')" title="Тета">θ</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\Delta')" title="Дельта">Δ</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\int_{a}^{b} f(x)\\,dx')" title="Интеграл">∫</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\sum_{i=1}^{n}')" title="Сумма">∑</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\lim_{x \\to 0}')" title="Предел">lim</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\vec{a}')" title="Вектор">a⃗</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\angle ABC')" title="Угол">∠</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\triangle ABC')" title="Треугольник">△</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\left( \\right)')" title="Круглые скобки">( )</button>
+        <button class="math-sym-btn" onclick="WB.insertLatexSymbol('\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}')" title="Матрица 2x2">[M]</button>
+      </div>
+
+      <!-- Поле ввода кода LaTeX -->
+      <div class="modal-section">
+        <label class="modal-label">Код LaTeX:</label>
+        <textarea id="latexInput" class="modal-input" rows="3" placeholder="Например: f(x) = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}" oninput="WB.updateLatexPreview()" style="font-family:Consolas, monospace; font-size:13px;"></textarea>
+      </div>
+
+      <div class="latex-modal-footer">
+        <button type="button" class="tool-btn physics-ege-btn latex-physics-btn" onclick="WB.closeLatexModal(); WB.openPhysicsModal();">
+          ⚛️ Выбрать из Кодификатора Физики
+        </button>
+        <div class="latex-modal-actions">
+          <button type="button" class="tool-btn" onclick="WB.closeLatexModal()">Отмена</button>
+          <button type="button" class="tool-btn primary-btn latex-submit-btn" onclick="WB.applyLatexModal()">
+            Готово (Вставить на доску)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Фоновый слой сетки (всегда позади виджетов, чтобы сетка не просвечивала сквозь объекты) -->
+  <canvas id="gridCanvas" aria-hidden="true"></canvas>
+
+  <!-- Слой для стикеров, текста, картинок, PDF, формул и виджетов -->
+  <div id="world-layer"></div>
+
+  <!-- Слой для векторного рисования и рамки выделения -->
+  <canvas id="board"></canvas>
+
+  <!-- Плавающая панель редактирования и построений на 3D-фигурах (Стереометрия LearnBoard) -->
+  <div id="shape3dFloatingUi" class="s3d-floating-ui" style="display:none;" onclick="event.stopPropagation(); if (WB.s3dEditor && WB.s3dEditor.openDropdown && !event.target.closest('.s3d-dropdown')) { WB.s3dEditor.openDropdown = null; WB.sync3DFloatingUI(); }">
+    <div class="s3d-toolbar-bar">
+      <!-- Ручка перетаскивания панели -->
+      <div class="s3d-drag-handle" id="s3dDragHandle" title="Перетащить панель 3D-фигуры">
+        <svg width="12" height="18" viewBox="0 0 12 18" fill="currentColor" aria-hidden="true">
+          <circle cx="3.5" cy="4" r="1.3"/><circle cx="8.5" cy="4" r="1.3"/>
+          <circle cx="3.5" cy="9" r="1.3"/><circle cx="8.5" cy="9" r="1.3"/>
+          <circle cx="3.5" cy="14" r="1.3"/><circle cx="8.5" cy="14" r="1.3"/>
+        </svg>
+      </div>
+
+      <!-- 1: Перемещать фигуру и точки -->
+      <button type="button" class="s3d-tool-btn active" id="s3dToolMove" onclick="WB.set3DEditMode('move')" data-s3d-tip="Перемещать фигуру и точки · 1" aria-label="Перемещать фигуру и точки · 1">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 3l14 7.2-6.1 2.2-2.2 6.1L5 3z"/>
+        </svg>
+        <span class="s3d-hk">1</span>
+      </button>
+
+      <!-- 2: Вращать 3D-фигуру -->
+      <button type="button" class="s3d-tool-btn" id="s3dToolRotate" onclick="WB.set3DEditMode('rotate')" data-s3d-tip="Вращать · 2" aria-label="Вращать · 2">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <ellipse cx="12" cy="12" rx="9" ry="4.2"/>
+          <path d="M12 3c2.5 0 4.5 4 4.5 9s-2 9-4.5 9-4.5-4-4.5-9 2-9 4.5-9z"/>
+          <polyline points="15 14.5 17.5 16 15.5 18"/>
+        </svg>
+        <span class="s3d-hk">2</span>
+      </button>
+
+      <!-- 3: Точка на ребре / грани / вершине -->
+      <button type="button" class="s3d-tool-btn" id="s3dToolPoint" onclick="WB.set3DEditMode('point')" data-s3d-tip="Точка · 3" aria-label="Точка · 3">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="8"/>
+          <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="s3d-hk">3</span>
+      </button>
+
+      <!-- 4: Линия (отрезок между точками 3D-фигуры) -->
+      <button type="button" class="s3d-tool-btn" id="s3dToolLine" onclick="WB.set3DEditMode('line')" data-s3d-tip="Линия · 4" aria-label="Линия · 4">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span class="s3d-hk">4</span>
+      </button>
+
+      <!-- 5: Плоскость (сечение по точкам) -->
+      <button type="button" class="s3d-tool-btn" id="s3dToolPlane" onclick="WB.set3DEditMode('plane')" data-s3d-tip="Плоскость · 5" aria-label="Плоскость · 5">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="5" y="5" width="14" height="14" rx="2"/>
+        </svg>
+        <span class="s3d-hk">5</span>
+      </button>
+
+      <!-- 6: Привязка к рёбрам, серединам и вершинам -->
+      <button type="button" class="s3d-tool-btn teal-toggle active" id="s3dToolSnap" onclick="WB.toggle3DSnapMode()" data-s3d-tip="Привязка к рёбрам · 6" aria-label="Привязка к рёбрам · 6">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8V6a2 2 0 0 1 2-2h2"/>
+          <path d="M4 16v2a2 2 0 0 0 2 2h2"/>
+          <path d="M16 4h2a2 2 0 0 1 2 2v2"/>
+          <path d="M16 20h2a2 2 0 0 0 2-2v-2"/>
+          <line x1="9" y1="12" x2="15" y2="12"/>
+        </svg>
+        <span class="s3d-hk">6</span>
+      </button>
+
+      <!-- 7: Размеры, вид и построения -->
+      <button type="button" class="s3d-tool-btn" id="s3dToolSettings" onclick="WB.toggle3DSettingsPanel()" data-s3d-tip="Размеры, вид и построения · 7" aria-label="Размеры, вид и построения · 7">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="4" y1="6" x2="20" y2="6"/>
+          <line x1="4" y1="12" x2="20" y2="12"/>
+          <line x1="4" y1="18" x2="20" y2="18"/>
+          <line x1="9" y1="3.5" x2="9" y2="8.5"/>
+          <line x1="15" y1="9.5" x2="15" y2="14.5"/>
+          <line x1="11" y1="15.5" x2="11" y2="20.5"/>
+        </svg>
+        <span class="s3d-hk">7</span>
+      </button>
+
+      <!-- Закрыть панель 3D -->
+      <button type="button" class="s3d-close-bar-btn" onclick="WB.close3DEditor()" title="Закрыть панель 3D-фигуры" aria-label="Закрыть">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Выпадающая карточка «Размеры и вид / Построения» (полное соответствие 27-страничному референсу без «Основание: Правильный многоугольник») -->
+    <div id="s3dSettingsCard" class="s3d-settings-card" style="display:none;">
+      <div class="s3d-card-header">
+        <span id="s3dBodyTitle" class="s3d-card-title">Куб</span>
+        <button type="button" class="s3d-card-close" onclick="WB.toggle3DSettingsPanel(false)" aria-label="Скрыть настройки">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Переключатель вкладок: Размеры и вид | Построения (N) -->
+      <div class="s3d-tabs">
+        <button type="button" id="s3dTabDimensionsBtn" class="s3d-tab-btn active" onclick="WB.switch3DTab('dimensions')">Размеры и вид</button>
+        <button type="button" id="s3dTabConstructionsBtn" class="s3d-tab-btn" onclick="WB.switch3DTab('constructions')">Построения (<span id="s3dConstructionsCount">0</span>)</button>
+      </div>
+
+      <!-- Вкладка 1: Размеры и вид -->
+      <div id="s3dPaneDimensions" class="s3d-pane s3d-pane-scroll">
+        <label class="s3d-check-row">
+          <input type="checkbox" id="s3dShowLabelsCheck" checked onchange="WB.updateActive3DParam('showLabels', this.checked, true)">
+          <span class="s3d-check-box" aria-hidden="true"></span>
+          <span>Подписи вершин и точек</span>
+        </label>
+
+        <!-- Контекстный выпадающий список сверху: «Вид» (Параллелепипед) или «Пирамида» (Пирамида / Тетраэдр) -->
+        <div class="s3d-param-group s3d-dropdown-group" id="s3dSubtypeTopGroup" style="display:none;">
+          <div class="s3d-field-label" id="s3dSubtypeTopLabel">Вид</div>
+          <div class="s3d-dropdown" id="s3dSubtypeTopDropdown">
+            <button type="button" class="s3d-dropdown-trigger" id="s3dSubtypeTopTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="WB.toggle3DSubtypeDropdown('top')">
+              <span id="s3dSubtypeTopValue">Прямоугольный</span>
+              <svg class="s3d-dropdown-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="s3d-dropdown-menu" id="s3dSubtypeTopMenu" role="listbox"></div>
+          </div>
+        </div>
+
+        <!-- Число сторон основания (Призма, Пирамида, Усечённая пирамида) -->
+        <div class="s3d-param-group" id="s3dSidesGroup" style="display:none;">
+          <div class="s3d-field-label" id="s3dSidesLabel">Число сторон основания</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dSidesSlider" class="s3d-range" min="3" max="8" step="1" value="5" oninput="WB.updateActive3DParam('baseSides', this.value, false)" onchange="WB.updateActive3DParam('baseSides', this.value, true)">
+            <input type="number" id="s3dSidesInput" class="s3d-num-input" min="3" max="8" step="1" value="5" oninput="WB.updateActive3DParam('baseSides', this.value, false)" onchange="WB.updateActive3DParam('baseSides', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Главный размер: Длина ребра / Длина a / Радиус правильного основания / Радиус основания / Радиус -->
+        <div class="s3d-param-group" id="s3dRadiusGroup">
+          <div class="s3d-field-label" id="s3dRadiusLabel">Длина ребра</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dRadiusSlider" class="s3d-range" min="0.5" max="10" step="0.25" value="3" oninput="WB.updateActive3DParam('radius', this.value, false)" onchange="WB.updateActive3DParam('radius', this.value, true)">
+            <input type="number" id="s3dRadiusInput" class="s3d-num-input" min="0.5" max="10" step="0.25" value="3" oninput="WB.updateActive3DParam('radius', this.value, false)" onchange="WB.updateActive3DParam('radius', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Ширина b (Параллелепипед) -->
+        <div class="s3d-param-group" id="s3dDepthGroup" style="display:none;">
+          <div class="s3d-field-label" id="s3dDepthLabel">Ширина b</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dDepthSlider" class="s3d-range" min="0.5" max="10" step="0.25" value="2" oninput="WB.updateActive3DParam('depth', this.value, false)" onchange="WB.updateActive3DParam('depth', this.value, true)">
+            <input type="number" id="s3dDepthInput" class="s3d-num-input" min="0.5" max="10" step="0.25" value="2" oninput="WB.updateActive3DParam('depth', this.value, false)" onchange="WB.updateActive3DParam('depth', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Сдвиг верхней части X / Y (Призма, Пирамида, Усечённая пирамида) -->
+        <div class="s3d-param-group" id="s3dTopShiftXGroup" style="display:none;">
+          <div class="s3d-field-label">Сдвиг верхней части X</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTopShiftXSlider" class="s3d-range" min="-4" max="4" step="0.1" value="0" oninput="WB.updateActive3DParam('topShiftX', this.value, false)" onchange="WB.updateActive3DParam('topShiftX', this.value, true)">
+            <input type="number" id="s3dTopShiftXInput" class="s3d-num-input" min="-4" max="4" step="0.1" value="0" oninput="WB.updateActive3DParam('topShiftX', this.value, false)" onchange="WB.updateActive3DParam('topShiftX', this.value, true)">
+          </div>
+        </div>
+
+        <div class="s3d-param-group" id="s3dTopShiftYGroup" style="display:none;">
+          <div class="s3d-field-label">Сдвиг верхней части Y</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTopShiftYSlider" class="s3d-range" min="-4" max="4" step="0.1" value="0" oninput="WB.updateActive3DParam('topShiftY', this.value, false)" onchange="WB.updateActive3DParam('topShiftY', this.value, true)">
+            <input type="number" id="s3dTopShiftYInput" class="s3d-num-input" min="-4" max="4" step="0.1" value="0" oninput="WB.updateActive3DParam('topShiftY', this.value, false)" onchange="WB.updateActive3DParam('topShiftY', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Высота h -->
+        <div class="s3d-param-group" id="s3dHeightGroup">
+          <div class="s3d-field-label" id="s3dHeightLabel">Высота h</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dHeightSlider" class="s3d-range" min="0.5" max="10" step="0.25" value="3" oninput="WB.updateActive3DParam('height', this.value, false)" onchange="WB.updateActive3DParam('height', this.value, true)">
+            <input type="number" id="s3dHeightInput" class="s3d-num-input" min="0.5" max="10" step="0.25" value="3" oninput="WB.updateActive3DParam('height', this.value, false)" onchange="WB.updateActive3DParam('height', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Угол основания, ° (Прямой и Наклонный параллелепипед) -->
+        <div class="s3d-param-group" id="s3dBaseAngleGroup" style="display:none;">
+          <div class="s3d-field-label">Угол основания, °</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dBaseAngleSlider" class="s3d-range" min="20" max="160" step="1" value="45" oninput="WB.updateActive3DParam('baseAngle', this.value, false)" onchange="WB.updateActive3DParam('baseAngle', this.value, true)">
+            <input type="number" id="s3dBaseAngleInput" class="s3d-num-input" min="20" max="160" step="1" value="45" oninput="WB.updateActive3DParam('baseAngle', this.value, false)" onchange="WB.updateActive3DParam('baseAngle', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Наклон ребра по X / Y, ° (Наклонный параллелепипед) -->
+        <div class="s3d-param-group" id="s3dTiltXGroup" style="display:none;">
+          <div class="s3d-field-label">Наклон ребра по X, °</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTiltXSlider" class="s3d-range" min="-60" max="60" step="1" value="36" oninput="WB.updateActive3DParam('tiltX', this.value, false)" onchange="WB.updateActive3DParam('tiltX', this.value, true)">
+            <input type="number" id="s3dTiltXInput" class="s3d-num-input" min="-60" max="60" step="1" value="36" oninput="WB.updateActive3DParam('tiltX', this.value, false)" onchange="WB.updateActive3DParam('tiltX', this.value, true)">
+          </div>
+        </div>
+
+        <div class="s3d-param-group" id="s3dTiltYGroup" style="display:none;">
+          <div class="s3d-field-label">Наклон ребра по Y, °</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTiltYSlider" class="s3d-range" min="-60" max="60" step="1" value="-25" oninput="WB.updateActive3DParam('tiltY', this.value, false)" onchange="WB.updateActive3DParam('tiltY', this.value, true)">
+            <input type="number" id="s3dTiltYInput" class="s3d-num-input" min="-60" max="60" step="1" value="-25" oninput="WB.updateActive3DParam('tiltY', this.value, false)" onchange="WB.updateActive3DParam('tiltY', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Отношение верхнего основания (Усечённая пирамида) -->
+        <div class="s3d-param-group" id="s3dTopRatioGroup" style="display:none;">
+          <div class="s3d-field-label">Отношение верхнего основания</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTopRatioSlider" class="s3d-range" min="0.1" max="0.95" step="0.05" value="0.5" oninput="WB.updateActive3DParam('topRatio', this.value, false)" onchange="WB.updateActive3DParam('topRatio', this.value, true)">
+            <input type="number" id="s3dTopRatioInput" class="s3d-num-input" min="0.1" max="0.95" step="0.05" value="0.5" oninput="WB.updateActive3DParam('topRatio', this.value, false)" onchange="WB.updateActive3DParam('topRatio', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Контекстный выпадающий список для Конуса: «Тело» (Конус / Усечённый конус) -->
+        <div class="s3d-param-group s3d-dropdown-group" id="s3dSubtypeConeGroup" style="display:none;">
+          <div class="s3d-field-label" id="s3dSubtypeConeLabel">Тело</div>
+          <div class="s3d-dropdown" id="s3dSubtypeConeDropdown">
+            <button type="button" class="s3d-dropdown-trigger" id="s3dSubtypeConeTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="WB.toggle3DSubtypeDropdown('cone')">
+              <span id="s3dSubtypeConeValue">Конус</span>
+              <svg class="s3d-dropdown-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <div class="s3d-dropdown-menu" id="s3dSubtypeConeMenu" role="listbox"></div>
+          </div>
+        </div>
+
+        <!-- Верхний радиус (Усечённый конус) -->
+        <div class="s3d-param-group" id="s3dTopRadiusGroup" style="display:none;">
+          <div class="s3d-field-label">Верхний радиус</div>
+          <div class="s3d-slider-row">
+            <input type="range" id="s3dTopRadiusSlider" class="s3d-range" min="0.2" max="7.5" step="0.25" value="1" oninput="WB.updateActive3DParam('topRadius', this.value, false)" onchange="WB.updateActive3DParam('topRadius', this.value, true)">
+            <input type="number" id="s3dTopRadiusInput" class="s3d-num-input" min="0.2" max="7.5" step="0.25" value="1" oninput="WB.updateActive3DParam('topRadius', this.value, false)" onchange="WB.updateActive3DParam('topRadius', this.value, true)">
+          </div>
+        </div>
+
+        <!-- Сетка чекбоксов: Диагонали, Невидимые рёбра, Заливка граней -->
+        <div class="s3d-checks-grid">
+          <label class="s3d-check-row" id="s3dDiagonalsWrap" style="display:none;">
+            <input type="checkbox" id="s3dDiagonalsCheck" onchange="WB.updateActive3DParam('showDiagonals', this.checked, true)">
+            <span class="s3d-check-box" aria-hidden="true"></span>
+            <span>Диагонали</span>
+          </label>
+          <label class="s3d-check-row" id="s3dHiddenEdgesWrap">
+            <input type="checkbox" id="s3dHiddenEdgesCheck" checked onchange="WB.updateActive3DParam('showHiddenEdges', this.checked, true)">
+            <span class="s3d-check-box" aria-hidden="true"></span>
+            <span>Невидимые рёбра</span>
+          </label>
+          <label class="s3d-check-row" id="s3dFaceFillWrap">
+            <input type="checkbox" id="s3dFaceFillCheck" checked onchange="WB.updateActive3DParam('showFaces', this.checked, true)">
+            <span class="s3d-check-box" aria-hidden="true"></span>
+            <span>Заливка граней</span>
+          </label>
+        </div>
+
+        <!-- Раскрывающийся блок «Поворот по углам» -->
+        <div class="s3d-angles-section">
+          <button type="button" class="s3d-angles-toggle" id="s3dAnglesToggleBtn" aria-expanded="false" onclick="WB.toggle3DAnglesSection()">
+            <span class="s3d-angles-arrow" aria-hidden="true">▸</span>
+            <span>Поворот по углам</span>
+          </button>
+          <div class="s3d-angles-body" id="s3dAnglesBody" style="display:none;">
+            <div class="s3d-param-group">
+              <div class="s3d-field-label">Поворот по горизонтали, °</div>
+              <div class="s3d-slider-row">
+                <input type="range" id="s3dYawSlider" class="s3d-range" min="-180" max="180" step="1" value="-36" oninput="WB.updateActive3DParam('yawDeg', this.value, false)" onchange="WB.updateActive3DParam('yawDeg', this.value, true)">
+                <input type="number" id="s3dYawInput" class="s3d-num-input" min="-180" max="180" step="1" value="-36" oninput="WB.updateActive3DParam('yawDeg', this.value, false)" onchange="WB.updateActive3DParam('yawDeg', this.value, true)">
+              </div>
+            </div>
+            <div class="s3d-param-group">
+              <div class="s3d-field-label">Наклон по вертикали, °</div>
+              <div class="s3d-slider-row">
+                <input type="range" id="s3dPitchSlider" class="s3d-range" min="-80" max="80" step="1" value="21" oninput="WB.updateActive3DParam('pitchDeg', this.value, false)" onchange="WB.updateActive3DParam('pitchDeg', this.value, true)">
+                <input type="number" id="s3dPitchInput" class="s3d-num-input" min="-80" max="80" step="1" value="21" oninput="WB.updateActive3DParam('pitchDeg', this.value, false)" onchange="WB.updateActive3DParam('pitchDeg', this.value, true)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Кнопка «Исходный вид» -->
+        <button type="button" class="s3d-reset-view-btn" id="s3dResetViewBtn" onclick="WB.reset3DView()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          <span>Исходный вид</span>
+        </button>
+
+        <div class="s3d-footer-hint" id="s3dFooterHint">
+          Чтобы изменить вид фигуры или число вершин, удалите добавленные точки.
+        </div>
+      </div>
+
+      <!-- Вкладка 2: Построения (точки, отрезки, сечения) -->
+      <div id="s3dPaneConstructions" class="s3d-pane" style="display:none;">
+        <div id="s3dConstructionsList" class="s3d-constructions-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Плавающая панель работы с 2D-фигурами (стр. 4-5 PDF) -->
+  <div id="shape2dFloatingUi" class="s2d-floating-ui hidden" style="display:none;" onclick="event.stopPropagation()">
+    <div class="s2d-toolbar-bar">
+      <!-- 1. Заблокировать / Разблокировать -->
+      <button type="button" class="s2d-btn" id="s2dLockBtn" onclick="WB.toggle2DSelectionLock()" data-s2d-tip="Заблокировать" aria-label="Заблокировать">
+        <svg id="s2dLockIconOpen" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        </svg>
+        <svg id="s2dLockIconClosed" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="display:none;" aria-hidden="true">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </button>
+
+      <!-- 2. Цвет обводки (палитра) -->
+      <div class="s2d-pop-anchor">
+        <button type="button" class="s2d-btn" id="s2dColorBtn" onclick="WB.toggle2DPopover('s2dColorPopover', event)" data-s2d-tip="Цвет контура" aria-label="Цвет контура">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+            <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+          </svg>
+        </button>
+        <div id="s2dColorPopover" class="s2d-popover">
+          <div class="s2d-swatch-grid">
+            <button type="button" class="s2d-swatch" style="background:#1e293b" onclick="WB.apply2DStrokeColor('#1e293b')" title="Чёрный"></button>
+            <button type="button" class="s2d-swatch" style="background:#ef4444" onclick="WB.apply2DStrokeColor('#ef4444')" title="Красный"></button>
+            <button type="button" class="s2d-swatch" style="background:#2563eb" onclick="WB.apply2DStrokeColor('#2563eb')" title="Синий"></button>
+            <button type="button" class="s2d-swatch" style="background:#0d9488" onclick="WB.apply2DStrokeColor('#0d9488')" title="Изумрудный"></button>
+            <button type="button" class="s2d-swatch" style="background:#16a34a" onclick="WB.apply2DStrokeColor('#16a34a')" title="Зелёный"></button>
+            <button type="button" class="s2d-swatch" style="background:#f59e0b" onclick="WB.apply2DStrokeColor('#f59e0b')" title="Янтарный"></button>
+            <button type="button" class="s2d-swatch" style="background:#8b5cf6" onclick="WB.apply2DStrokeColor('#8b5cf6')" title="Фиолетовый"></button>
+            <label class="s2d-swatch s2d-swatch-custom" title="Свой цвет">
+              <input type="color" id="s2dCustomColorInput" value="#ef4444" oninput="WB.apply2DStrokeColor(this.value)">
+              <span>+</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Цвет заливки (капля) -->
+      <div class="s2d-pop-anchor">
+        <button type="button" class="s2d-btn" id="s2dFillBtn" onclick="WB.toggle2DPopover('s2dFillPopover', event)" data-s2d-tip="Заливка" aria-label="Заливка">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+          </svg>
+        </button>
+        <div id="s2dFillPopover" class="s2d-popover">
+          <div class="s2d-swatch-grid">
+            <button type="button" class="s2d-swatch s2d-swatch-none" onclick="WB.apply2DFillColor('transparent')" title="Без заливки">∅</button>
+            <button type="button" class="s2d-swatch" style="background:rgba(148, 163, 184, 0.35)" onclick="WB.apply2DFillColor('rgba(148, 163, 184, 0.35)')" title="Светло-серый"></button>
+            <button type="button" class="s2d-swatch" style="background:rgba(239, 68, 68, 0.22)" onclick="WB.apply2DFillColor('rgba(239, 68, 68, 0.22)')" title="Светло-красный"></button>
+            <button type="button" class="s2d-swatch" style="background:rgba(37, 99, 235, 0.22)" onclick="WB.apply2DFillColor('rgba(37, 99, 235, 0.22)')" title="Светло-синий"></button>
+            <button type="button" class="s2d-swatch" style="background:rgba(16, 185, 129, 0.22)" onclick="WB.apply2DFillColor('rgba(16, 185, 129, 0.22)')" title="Изумрудный"></button>
+            <button type="button" class="s2d-swatch" style="background:rgba(245, 158, 11, 0.24)" onclick="WB.apply2DFillColor('rgba(245, 158, 11, 0.24)')" title="Жёлтый"></button>
+            <button type="button" class="s2d-swatch" style="background:rgba(139, 92, 246, 0.22)" onclick="WB.apply2DFillColor('rgba(139, 92, 246, 0.22)')" title="Фиолетовый"></button>
+            <label class="s2d-swatch s2d-swatch-custom" title="Свой цвет заливки">
+              <input type="color" id="s2dCustomFillInput" value="#cbd5e1" oninput="WB.apply2DFillColor(this.value, true)">
+              <span>+</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Толщина контура (2px / 4px...) -->
+      <div class="s2d-pop-anchor">
+        <button type="button" class="s2d-size-btn" id="s2dSizeBtn" onclick="WB.toggle2DPopover('s2dSizePopover', event)" data-s2d-tip="Толщина линии" aria-label="Толщина линии">
+          <span id="s2dSizeLabel">2px</span>
+        </button>
+        <div id="s2dSizePopover" class="s2d-popover s2d-size-popover">
+          <button type="button" class="s2d-menu-opt" data-size="2" onclick="WB.apply2DStrokeSize(2)">2px</button>
+          <button type="button" class="s2d-menu-opt" data-size="3" onclick="WB.apply2DStrokeSize(3)">3px</button>
+          <button type="button" class="s2d-menu-opt" data-size="4" onclick="WB.apply2DStrokeSize(4)">4px</button>
+          <button type="button" class="s2d-menu-opt" data-size="6" onclick="WB.apply2DStrokeSize(6)">6px</button>
+          <button type="button" class="s2d-menu-opt" data-size="8" onclick="WB.apply2DStrokeSize(8)">8px</button>
+          <button type="button" class="s2d-menu-opt" data-size="12" onclick="WB.apply2DStrokeSize(12)">12px</button>
+        </div>
+      </div>
+
+      <span class="s2d-v-sep"></span>
+
+      <!-- 5. Слои -->
+      <div class="s2d-pop-anchor">
+        <button type="button" class="s2d-btn" id="s2dLayersBtn" onclick="WB.toggle2DPopover('s2dLayersPopover', event)" data-s2d-tip="Слои" aria-label="Слои">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+            <polyline points="2 12 12 17 22 12"/>
+            <polyline points="2 17 12 22 22 17"/>
+          </svg>
+        </button>
+        <div id="s2dLayersPopover" class="s2d-popover s2d-layers-popover">
+          <button type="button" class="s2d-menu-opt" onclick="WB.reorder2DSelectionLayer('front')">На передний план</button>
+          <button type="button" class="s2d-menu-opt" onclick="WB.reorder2DSelectionLayer('forward')">Вперёд</button>
+          <button type="button" class="s2d-menu-opt" onclick="WB.reorder2DSelectionLayer('backward')">Назад</button>
+          <button type="button" class="s2d-menu-opt" onclick="WB.reorder2DSelectionLayer('back')">На задний план</button>
+        </div>
+      </div>
+
+      <!-- 6. Дублировать -->
+      <button type="button" class="s2d-btn" id="s2dDuplicateBtn" onclick="WB.duplicateSelection()" data-s2d-tip="Дублировать" aria-label="Дублировать">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="12" height="12" rx="2"/>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+      </button>
+
+      <!-- 7. Удалить -->
+      <button type="button" class="s2d-btn s2d-btn-danger" id="s2dDeleteBtn" onclick="WB.deleteSelection()" data-s2d-tip="Удалить" aria-label="Удалить">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <line x1="10" y1="11" x2="10" y2="17"/>
+          <line x1="14" y1="11" x2="14" y2="17"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Нижняя панель из 3 раскрытых блоков (инструменты, стиль, вставки) -->
+  <div id="bottomDock" class="toolbar bottom-dock">
+
+    <!-- Блок 1: Выбор, Рука, Карандаш, Фломастер, Ластик и Лазерная указка -->
+    <div id="toolsBlock" class="panel dock-block" role="group" aria-label="Инструменты выбора и рисования">
+      <button type="button" class="tool-btn icon-hotkey-btn" id="selectBtn" onclick="WB.setTool('select')" aria-label="Выбор (V)" data-tooltip="Выбор (V)" title="Выбор, выделение и перемещение вершин (V)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 3l14 7.2-6.1 2.2-2.2 6.1L5 3z"/>
+        </svg>
+        <span class="hotkey-tag">V</span>
+      </button>
+
+      <button type="button" class="tool-btn icon-hotkey-btn" id="handBtn" onclick="WB.setTool('hand')" aria-label="Рука (H)" data-tooltip="Рука (H)" title="Перемещение холста (Пробел / H)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/>
+          <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v6"/>
+          <path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/>
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+        </svg>
+        <span class="hotkey-tag">H</span>
+      </button>
+
+      <div class="divider"></div>
+
+      <button type="button" class="tool-btn icon-hotkey-btn active" id="penBtn" onclick="WB.setTool('pen')" aria-label="Карандаш (P)" data-tooltip="Карандаш (P)" title="Карандаш / Маркер (P)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+          <path d="m15 5 4 4"/>
+        </svg>
+        <span class="hotkey-tag">P</span>
+      </button>
+
+      <button type="button" class="tool-btn icon-hotkey-btn" id="highlighterBtn" onclick="WB.setTool('highlighter')" aria-label="Фломастер (M)" data-tooltip="Фломастер (M)" title="Полупрозрачный фломастер (M)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m9 11-6 6v3h9l3-3"/>
+          <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>
+        </svg>
+        <span class="hotkey-tag">M</span>
+      </button>
+
+      <!-- Ластик с выпадающим меню настроек стирания и очистки страницы (как в LearnBoard) -->
+      <div class="dropdown-wrap">
+        <button type="button" class="tool-btn icon-hotkey-btn" id="eraserBtn" onclick="WB.handleEraserBtnClick(event)" aria-label="Ластик (E)" data-tooltip="Ластик (E)" title="Ластик и очистка страницы (E)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
+            <path d="M22 21H7"/>
+            <path d="m5 11 9 9"/>
+          </svg>
+          <span class="hotkey-tag hotkey-chevron">▴</span>
+        </button>
+
+        <div id="eraserMenu" class="dropdown-menu drop-up lb-eraser-popover" onclick="event.stopPropagation()">
+          <div class="lb-eraser-sec-title">Что стирать</div>
+
+          <button type="button" class="lb-eraser-radio-row active" id="eraserTargetPenHighlighter" onclick="WB.setEraserTarget('pen_and_highlighter')">
+            <span class="lb-radio-circle"><span class="lb-radio-dot"></span></span>
+            <span>Ручку и маркер</span>
+          </button>
+
+          <button type="button" class="lb-eraser-radio-row" id="eraserTargetHighlighter" onclick="WB.setEraserTarget('highlighter_only')">
+            <span class="lb-radio-circle"><span class="lb-radio-dot"></span></span>
+            <span>Только маркер</span>
+          </button>
+
+          <button type="button" class="lb-eraser-radio-row" id="eraserTargetPen" onclick="WB.setEraserTarget('pen_only')">
+            <span class="lb-radio-circle"><span class="lb-radio-dot"></span></span>
+            <span>Только ручку</span>
+          </button>
+
+          <button type="button" class="lb-eraser-radio-row" id="eraserTargetAll" onclick="WB.setEraserTarget('all')">
+            <span class="lb-radio-circle"><span class="lb-radio-dot"></span></span>
+            <span>Все объекты</span>
+          </button>
+
+          <div class="lb-eraser-divider"></div>
+
+          <label class="lb-eraser-check-row">
+            <input type="checkbox" id="eraserWholeStrokeCheck" onchange="WB.toggleEraseWholeStroke(this.checked)">
+            <span class="lb-check-box"></span>
+            <span>Стирать штрих целиком</span>
+          </label>
+
+          <div class="lb-eraser-divider"></div>
+
+          <div class="lb-eraser-sec-title">Очистить страницу</div>
+          <button type="button" class="lb-eraser-clear-btn" onclick="WB.clearPageStrokes('highlighter')">Выделения маркером</button>
+          <button type="button" class="lb-eraser-clear-btn" onclick="WB.clearPageStrokes('student')">Штрихи ученика</button>
+          <button type="button" class="lb-eraser-clear-btn teacher-only-eraser" onclick="WB.clearPageStrokes('teacher')">Штрихи учителя</button>
+          <button type="button" class="lb-eraser-clear-btn teacher-only-eraser" onclick="WB.clearPageStrokes('all_strokes')">Все штрихи</button>
+        </div>
+      </div>
+
+      <!-- Лазерная указка (стр. 4 PDF — ручка-указка с красным лазерным лучом) -->
+      <button type="button" class="tool-btn icon-hotkey-btn" id="laserBtn" onclick="WB.setTool('laser')" aria-label="Лазерная указка (L)" data-tooltip="Лазер (L)" title="Лазерная указка (L)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- Корпус ручки-указки -->
+          <path d="M3.5 17.5 10.5 10.5a1.6 1.6 0 0 1 2.3 2.3l-7 7a1.6 1.6 0 0 1-2.3-2.3Z"/>
+          <path d="m8.5 12.5 2.3 2.3"/>
+          <!-- Красный лазерный луч и точка -->
+          <line x1="12.5" y1="10.8" x2="18.2" y2="5.1" stroke="#ef4444" stroke-width="2"/>
+          <circle cx="19.2" cy="4.2" r="2" fill="#ef4444" stroke="none"/>
+          <path d="M19.2 1.2v1.2M22.2 4.2H21M17.2 2.2l.8.8M21.2 6.2l-.8-.8" stroke="#ef4444" stroke-width="1.4"/>
+        </svg>
+        <span class="hotkey-tag">L</span>
+      </button>
+    </div>
+
+    <!-- Блок 2: Фигуры 2D/3D, Физика ЕГЭ, Текст, Формула, Таблица, Виджеты, Стикер -->
+    <div id="insertsBlock" class="panel dock-block" role="group" aria-label="Вставка объектов">
+
+      <!-- 1. Фигуры (однородная контурная иконка + расширенное меню 2D и 3D со стр. 1-2 PDF) -->
+      <div class="dropdown-wrap">
+        <button type="button" class="tool-btn lb-shapes-trigger" id="shapesMenuBtn" onclick="WB.toggleDropdown('shapesMenu', event)" data-tooltip="Фигуры" title="Геометрические 2D и 3D фигуры, оси и стрелка">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 7 11h10L12 3Z"/>
+            <rect x="3.5" y="13.5" width="7" height="7" rx="1"/>
+            <circle cx="17" cy="17" r="3.5"/>
+          </svg>
+          <span id="shapesMenuBtnLabel">Фигуры</span>
+          <span style="font-size:10px; opacity:0.65;">▴</span>
+        </button>
+
+        <div id="shapesMenu" class="dropdown-menu drop-up lb-shapes-popover">
+          <div class="shapes-sec-hdr">ЛИНИИ И ОСИ</div>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('line')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/></svg>
+            <span>Отрезок / Линия</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('arrow')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="10 5 19 5 19 14"/></svg>
+            <span>Липкая стрелка</span>
+            <span class="shape-hk">A</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('axes')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="21" x2="12" y2="3"/></svg>
+            <span>Декартовы оси</span>
+          </button>
+
+          <div class="shapes-sec-hdr">2D ФИГУРЫ</div>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('rect')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+            <span>Прямоугольник</span>
+            <span class="shape-hk">R</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('square')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+            <span>Квадрат</span>
+            <span class="shape-hk">Q</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('ellipse')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg>
+            <span>Эллипс</span>
+            <span class="shape-hk">O</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('circle')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8"/></svg>
+            <span>Круг</span>
+            <span class="shape-hk">C</span>
+          </button>
+
+          <!-- Переключатель «По рамке / Из центра» (стр. 1 PDF) -->
+          <div class="shape-origin-toggle" onclick="event.stopPropagation()">
+            <button type="button" id="shapeOriginBoxBtn" class="shape-origin-btn active" onclick="WB.setShapeDrawOrigin(false)">По рамке</button>
+            <button type="button" id="shapeOriginCenterBtn" class="shape-origin-btn" onclick="WB.setShapeDrawOrigin(true)">Из центра</button>
+          </div>
+
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('unit_circle')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+            <span>Тригонометрический круг</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('triangle')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="12 4 3 20 21 20"/></svg>
+            <span>Треугольник</span>
+            <span class="shape-hk">W</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('rhombus')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="12 3 21 12 12 21 3 12"/></svg>
+            <span>Ромб</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('parallelogram')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="7 5 21 5 17 19 3 19"/></svg>
+            <span>Параллелограмм</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('trapezoid')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="7 5 17 5 21 19 3 19"/></svg>
+            <span>Трапеция</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('pentagon')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="12 3 21 9.5 17.5 20 6.5 20 3 9.5"/></svg>
+            <span>Пятиугольник</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('hexagon')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polygon points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5"/></svg>
+            <span>Шестиугольник</span>
+          </button>
+
+          <div class="shapes-sec-hdr">3D ФИГУРЫ</div>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('cube')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="8" width="12" height="12"/><polyline points="8 8 8 4 20 4 20 16 15 16"/><line x1="3" y1="8" x2="8" y2="4"/><line x1="15" y1="8" x2="20" y2="4"/><line x1="15" y1="20" x2="20" y2="16"/></svg>
+            <span>Куб</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('parallelepiped')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="9" width="14" height="10"/><polyline points="7 9 7 5 21 5 21 15 16 15"/><line x1="2" y1="9" x2="7" y2="5"/><line x1="16" y1="9" x2="21" y2="5"/><line x1="16" y1="19" x2="21" y2="15"/></svg>
+            <span>Параллелепипед</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('prism')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 3 5 8 19 8"/><polyline points="5 8 5 18 19 18 19 8"/><line x1="12" y1="3" x2="12" y2="14" stroke-dasharray="2 2"/></svg>
+            <span>Призма</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('pyramid')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 3 4 19 16 19"/><polyline points="12 3 20 15 16 19"/></svg>
+            <span>Пирамида</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('tetrahedron')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 3 4 19 20 17"/><line x1="12" y1="3" x2="13" y2="20"/></svg>
+            <span>Тетраэдр</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('cylinder')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/></svg>
+            <span>Цилиндр</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('cone')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 18 12 4l7 14"/><ellipse cx="12" cy="18" rx="7" ry="2.5"/></svg>
+            <span>Конус</span>
+          </button>
+          <button type="button" class="drop-item shape-row" onclick="WB.setTool('sphere')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><ellipse cx="12" cy="12" rx="8" ry="3" stroke-dasharray="2 2"/></svg>
+            <span>Сфера</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Физика ЕГЭ (перемещена сразу рядом с кнопкой Фигуры) -->
+      <button type="button" class="tool-btn physics-ege-btn" id="physicsModalBtn" onclick="WB.openPhysicsModal()" title="Формулы по физике из Кодификатора ЕГЭ 2027 (F)">
+        <span aria-hidden="true">⚛️</span><span class="physics-ege-full"> Физика ЕГЭ</span><span class="physics-ege-short" aria-hidden="true"> ЕГЭ</span>
+      </button>
+
+      <!-- 3. Текст (стиль иконки T с клавишей T) -->
+      <button type="button" class="tool-btn icon-hotkey-btn" id="textInsertBtn" onclick="WB.addWidget('text')" aria-label="Текст (T)" data-tooltip="Текст (T)" title="Добавить текст (T)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 7V5h14v2"/>
+          <path d="M12 5v14"/>
+          <path d="M9 19h6"/>
+        </svg>
+        <span class="hotkey-tag">T</span>
+      </button>
+
+      <!-- 4. Формула -->
+      <button type="button" class="tool-btn icon-hotkey-btn" id="latexBtn" onclick="WB.openLatexModal()" aria-label="Формула (X)" data-tooltip="Формула (X)" title="Математическая формула LaTeX (X)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 7V5H6l6 7-6 7h12v-2"/>
+        </svg>
+        <span class="hotkey-tag">X</span>
+      </button>
+
+      <!-- 5. Таблица -->
+      <button type="button" class="tool-btn icon-only-btn" id="tableInsertBtn" onclick="WB.addWidget('table')" aria-label="Таблица" data-tooltip="Таблица" title="Добавить таблицу">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <path d="M3 10h18"/>
+          <path d="M9 4v16"/>
+        </svg>
+      </button>
+
+      <!-- 6. Виджеты (иконка как на стр. 6 PDF) -->
+      <div class="dropdown-wrap">
+        <button type="button" class="tool-btn icon-only-btn" id="lbWidgetsBtn" onclick="WB.toggleDropdown('lbWidgetsMenu', event)" aria-label="Виджеты" data-tooltip="Виджеты" title="Виджеты: Таймер, Секундомер, Калькулятор">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="7" height="7" rx="1.4"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.4"/>
+            <rect x="3" y="13" width="7" height="7" rx="1.4"/>
+            <rect x="12" y="13" width="7" height="7" rx="1.4"/>
+          </svg>
+        </button>
+        <div id="lbWidgetsMenu" class="dropdown-menu drop-up" style="min-width: 195px;">
+          <button type="button" class="drop-item" onclick="WB.addWidget('timer'); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+            <span>Таймер</span>
+          </button>
+          <button type="button" class="drop-item" onclick="WB.addWidget('stopwatch'); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M10 2h4"/></svg>
+            <span>Секундомер</span>
+          </button>
+          <button type="button" class="drop-item" onclick="WB.addWidget('calculator'); WB.closeAllDropdowns();">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></svg>
+            <span>Калькулятор</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 7. Стикер (иконка со смайликом, загнутым уголком и клавишей S — стр. 7 PDF) -->
+      <button type="button" class="tool-btn icon-hotkey-btn" id="noteInsertBtn" onclick="WB.addWidget('note')" aria-label="Стикер (S)" data-tooltip="Стикер (S)" title="Стикер (S)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"/>
+          <polyline points="15 3 15 9 21 9"/>
+          <path d="M9.5 14.5c.8 1 2 1.5 3.2 1.5s2.4-.5 3.2-1.5"/>
+          <circle cx="9.5" cy="11" r="0.8" fill="currentColor"/>
+          <circle cx="14.5" cy="11" r="0.8" fill="currentColor"/>
+        </svg>
+        <span class="hotkey-tag">S</span>
+      </button>
+
+      <div class="divider dock-collapse-divider"></div>
+
+      <button type="button" class="tool-btn dock-collapse-btn" id="toggleDockBtn" onclick="WB.toggleDockCollapsed()" title="Свернуть нижнюю панель для свободного рисования" aria-label="Свернуть панель">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Компактная кнопка возврата нижней панели (показывается, когда панель свёрнута) -->
+  <button type="button" id="expandDockBtn" class="dock-expand-fab" onclick="WB.toggleDockCollapsed()" title="Развернуть панель инструментов" aria-label="Развернуть панель">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+    <span>Панель</span>
+  </button>
+
+  <!-- Индикатор текущего масштаба при щипке / зуме -->
+  <div id="zoomToastHud" class="zoom-toast-hud" role="status" aria-live="polite" aria-hidden="true">100%</div>
+
+  <!-- Скрипты ядра Whiteboard Pro -->
+  <script src="js/state.js?v=17"></script>
+  <script src="js/geometry.js?v=14"></script>
+  <script src="js/renderer.js?v=16"></script>
+  <script src="js/widgets.js?v=17"></script>
+  <script src="js/physics.js?v=14"></script>
+  <script src="js/docs.js?v=17"></script>
+  <script src="js/export.js?v=20"></script>
+  <script src="js/app.js?v=20"></script>
+  <script src="js/collab.js?v=20"></script>
+</body>
+</html>
